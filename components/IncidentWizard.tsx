@@ -13,7 +13,7 @@ import NarrativeValidationStep from '@/components/steps/NarrativeValidationStep'
 import EditForm from '@/components/EditForm'
 import {
   Eye, Pencil, Download,
-  CheckCircle2, BookOpenText, AlertCircle, Upload, Files, LayoutGrid, Radar,
+  CheckCircle2, BookOpenText, AlertCircle, Upload, Files, LayoutGrid, Radar, Trash2,
 } from 'lucide-react'
 
 interface LoadedSource {
@@ -61,6 +61,7 @@ export default function IncidentWizard() {
   const [approvedMap, setApprovedMap] = useState<Record<string, boolean>>({})
   const [isLoadingSources, setIsLoadingSources] = useState(true)
   const [isFinalizingFile, setIsFinalizingFile] = useState(false)
+  const [isDeletingFile, setIsDeletingFile] = useState(false)
 
   const currentSource = sources[sourceIdx] ?? null
   const file = currentSource?.data ?? null
@@ -321,6 +322,51 @@ export default function IncidentWizard() {
     }
   }
 
+  async function handleDeleteCurrentFile() {
+    if (!currentSource || isDeletingFile) return
+
+    const confirmed = window.confirm(
+      `Se eliminara "${currentSource.name}" de la base de datos. Esta accion no se puede deshacer.`
+    )
+
+    if (!confirmed) return
+
+    setIsDeletingFile(true)
+
+    try {
+      const response = await fetch(`/api/incidents/${currentSource.dbId}`, {
+        method: 'DELETE',
+      })
+
+      if (!response.ok) {
+        throw new Error('No se pudo eliminar el archivo.')
+      }
+
+      setSources((prev) => {
+        const next = prev.filter((item) => item.dbId !== currentSource.dbId)
+
+        if (next.length === 0) {
+          setSourceIdx(0)
+          setActiveIdx(0)
+        } else {
+          setSourceIdx((prevIdx) => Math.min(prevIdx, next.length - 1))
+          setActiveIdx(0)
+        }
+
+        return next
+      })
+
+      setMode('view')
+      setActiveTab('overview')
+      setSaved(false)
+      setUploadMessage('Archivo eliminado de la base de datos.')
+    } catch {
+      setUploadMessage('No se pudo eliminar el archivo seleccionado.')
+    } finally {
+      setIsDeletingFile(false)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-slate-100">
       <main className="review-shell">
@@ -400,10 +446,18 @@ export default function IncidentWizard() {
               <button
                 className="btn-primary bg-rose-600 hover:bg-rose-700"
                 onClick={handleFinalizeCurrentFile}
-                disabled={!canRenderIncident || isFinalizingFile}
+                disabled={!canRenderIncident || isFinalizingFile || isDeletingFile}
               >
                 <CheckCircle2 className="w-4 h-4" />
                 <span>{isFinalizingFile ? 'Guardando...' : 'Finalizar revision'}</span>
+              </button>
+              <button
+                className="btn-secondary border-rose-200 text-rose-700 hover:bg-rose-50"
+                onClick={handleDeleteCurrentFile}
+                disabled={!currentSource || isDeletingFile || isFinalizingFile}
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>{isDeletingFile ? 'Eliminando...' : 'Eliminar archivo'}</span>
               </button>
             </div>
           </div>
