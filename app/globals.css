@@ -4,7 +4,7 @@
 
 @layer base {
   body {
-    @apply bg-slate-50 text-slate-800;
+    @apply bg-slate-100 text-slate-800;
   }
 }
 
@@ -43,5 +43,41 @@
   }
   .step-pill {
     @apply flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all;
+  }
+
+  .review-shell {
+    @apply max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6;
+  }
+
+  .review-top {
+    @apply bg-white border border-slate-200 rounded-2xl p-5 shadow-sm;
+  }
+
+  .review-stat {
+    @apply min-w-24 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-center;
+  }
+
+  .review-tab {
+    @apply inline-flex items-center gap-2 border-b-2 px-2 py-3 text-sm font-semibold transition-colors;
+  }
+
+  .review-tab-active {
+    @apply border-rose-500 text-rose-600;
+  }
+
+  .review-tab-inactive {
+    @apply border-transparent text-slate-500 hover:text-slate-700;
+  }
+
+  .pending-block {
+    @apply rounded-2xl border border-rose-200 bg-rose-50/50;
+  }
+
+  .validate-btn {
+    @apply inline-flex items-center gap-1 rounded-full border border-slate-300 bg-white px-3 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-50;
+  }
+
+  .field-box {
+    @apply rounded-xl border border-slate-200 bg-slate-50 p-4;
   }
 }
