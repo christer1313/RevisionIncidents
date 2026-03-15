@@ -7,22 +7,14 @@ export async function DELETE(
   context: { params: Promise<{ id: string }> }
 ) {
   const { id } = await context.params
-  const hasIncidentModel = 'incident' in prisma
-
-  const existing = hasIncidentModel
-    ? await prisma.incident.findUnique({ where: { id } })
-    : await prisma.incidentUpload.findUnique({ where: { id } })
+  const existing = await prisma.incident.findUnique({ where: { id } })
 
   if (!existing) {
     return NextResponse.json({ error: 'Incident not found.' }, { status: 404 })
   }
 
-  if (hasIncidentModel) {
-    await prisma.incident.delete({ where: { id } })
-    await refreshIncidentAggregate()
-  } else {
-    await prisma.incidentUpload.delete({ where: { id } })
-  }
+  await prisma.incident.delete({ where: { id } })
+  await refreshIncidentAggregate()
 
   return NextResponse.json({ ok: true })
 }

@@ -20,42 +20,7 @@ export async function GET(request: Request) {
   const status: StatusFilter =
     statusParam === 'REVIEWED' || statusParam === 'ALL' ? statusParam : 'PENDING'
 
-  const hasIncidentModel = 'incident' in prisma
-
-  if (hasIncidentModel) {
-    const rows = await prisma.incident.findMany({
-      where: buildWhereByStatus(status),
-      orderBy: { createdAt: 'asc' },
-    })
-
-    const sources = rows
-      .map((row) => {
-        try {
-          const incident = JSON.parse(row.originalJson) as Incident
-          const data: IncidentFile = {
-            count: 1,
-            incident_ids: [incident.incident_id].filter(Boolean),
-            incidents: [incident],
-          }
-
-          return {
-            id: row.id,
-            name: row.sourceFile || `${row.incidentId}.json`,
-            incidentCount: data.incidents.length,
-            status: row.status,
-            createdAt: row.createdAt.toISOString(),
-            data,
-          }
-        } catch {
-          return null
-        }
-      })
-      .filter((item): item is NonNullable<typeof item> => item !== null)
-
-    return NextResponse.json({ sources })
-  }
-
-  const rows = await prisma.incidentUpload.findMany({
+  const rows = await prisma.incident.findMany({
     where: buildWhereByStatus(status),
     orderBy: { createdAt: 'asc' },
   })
@@ -63,15 +28,17 @@ export async function GET(request: Request) {
   const sources = rows
     .map((row) => {
       try {
-        const parsed = JSON.parse(row.originalJson) as unknown
-        const data = normalizeIncidentFile(parsed)
-
-        if (!data) return null
+        const incident = JSON.parse(row.originalJson) as Incident
+        const data: IncidentFile = {
+          count: 1,
+          incident_ids: [incident.incident_id].filter(Boolean),
+          incidents: [incident],
+        }
 
         return {
           id: row.id,
-          name: row.fileName,
-          incidentCount: row.incidentCount,
+          name: row.sourceFile || `${row.incidentId}.json`,
+          incidentCount: data.incidents.length,
           status: row.status,
           createdAt: row.createdAt.toISOString(),
           data,
@@ -101,7 +68,6 @@ export async function POST(request: Request) {
   let acceptedCount = 0
   let skippedCount = 0
   const rejected: string[] = []
-  const hasIncidentModel = 'incident' in prisma
 
   for (const entry of body.files) {
     if (!entry || typeof entry.name !== 'string') {
@@ -121,37 +87,21 @@ export async function POST(request: Request) {
         continue
       }
 
-      if (hasIncidentModel) {
-        await prisma.incident.upsert({
-          where: { incidentId: incident.incident_id },
-          create: {
-            incidentId: incident.incident_id,
-            sourceFile: entry.name,
-            originalJson: JSON.stringify(incident),
-          },
-          update: {},
-        })
-      } else {
-        await prisma.incidentUpload.create({
-          data: {
-            fileName: entry.name,
-            incidentCount: normalized.incidents.length,
-            originalJson: JSON.stringify(normalized),
-          },
-        })
-      }
+      await prisma.incident.upsert({
+        where: { incidentId: incident.incident_id },
+        create: {
+          incidentId: incident.incident_id,
+          sourceFile: entry.name,
+          originalJson: JSON.stringify(incident),
+        },
+        update: {},
+      })
 
       acceptedCount++
-
-      if (!hasIncidentModel) {
-        break
-      }
     }
   }
 
-  if (hasIncidentModel) {
-    await refreshIncidentAggregate()
-  }
+  await refreshIncidentAggregate()
 
   return NextResponse.json({ acceptedCount, skippedCount, rejectedCount: rejected.length, rejected })
 }
