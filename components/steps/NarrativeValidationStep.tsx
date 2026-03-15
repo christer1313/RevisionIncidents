@@ -98,12 +98,14 @@ function ValidateToggle({
   label,
   value,
   validated,
+  options,
   onValidate,
   onSave,
 }: {
   label: string
   value: string
   validated: boolean
+  options?: string[]
   onValidate: () => void
   onSave: (value: string) => void
 }) {
@@ -116,7 +118,13 @@ function ValidateToggle({
           {validated ? 'Validado' : 'Validar'}
         </button>
       </div>
-      <EditableField label={label} value={value} onSave={onSave} placeholder="Completar campo" />
+      <EditableField
+        label={label}
+        value={value}
+        options={options}
+        onSave={onSave}
+        placeholder="Completar campo"
+      />
     </div>
   )
 }
@@ -142,12 +150,10 @@ export default function NarrativeValidationStep({ incident, approved, onApprove,
   const description = p.Description?.value || 'Sin descripcion narrativa.'
   const activeSubject = p.Active_Subject?.value || ''
   const activeSentiment = p.Active_Subject_Sentiment?.value || ''
-  const action = p.Action?.value || ''
   const passiveSubject = p.Passive_Subject?.value || ''
   const passiveSentiment = p.Passive_Subject_Sentiment?.value || ''
   const objectOfValue = p.Object_of_Value?.value || ''
   const goal = p.Goal?.value || ''
-  const emotion = p.Emotion?.value || ''
   const greimas = p.Greimas_Structure?.value || ''
 
   const total = 7
@@ -261,7 +267,7 @@ export default function NarrativeValidationStep({ incident, approved, onApprove,
                 />
               </div>
 
-              <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
+              <div className="grid grid-cols-1 gap-3 lg:grid-cols-4">
                 <ValidateToggle
                   label="Actor Activo"
                   value={activeSubject}
@@ -270,11 +276,12 @@ export default function NarrativeValidationStep({ incident, approved, onApprove,
                   onSave={(value) => updateNarrativeProperty('Active_Subject', value)}
                 />
                 <ValidateToggle
-                  label="Accion / Verbo"
-                  value={action}
-                  validated={!!validatedFields.action}
-                  onValidate={() => setValidatedFields((prev) => ({ ...prev, action: !prev.action }))}
-                  onSave={(value) => updateNarrativeProperty('Action', value)}
+                  label="Modalizacion Actor Activo"
+                  value={activeSentiment}
+                  options={['Positive', 'Neutral', 'Negative']}
+                  validated={!!validatedFields.activeModalization}
+                  onValidate={() => setValidatedFields((prev) => ({ ...prev, activeModalization: !prev.activeModalization }))}
+                  onSave={(value) => updateNarrativeProperty('Active_Subject_Sentiment', value)}
                 />
                 <ValidateToggle
                   label="Actor Pasivo / Victima"
@@ -282,6 +289,14 @@ export default function NarrativeValidationStep({ incident, approved, onApprove,
                   validated={!!validatedFields.passive}
                   onValidate={() => setValidatedFields((prev) => ({ ...prev, passive: !prev.passive }))}
                   onSave={(value) => updateNarrativeProperty('Passive_Subject', value)}
+                />
+                <ValidateToggle
+                  label="Modalizacion Actor Pasivo"
+                  value={passiveSentiment}
+                  options={['Positive', 'Neutral', 'Negative']}
+                  validated={!!validatedFields.passiveModalization}
+                  onValidate={() => setValidatedFields((prev) => ({ ...prev, passiveModalization: !prev.passiveModalization }))}
+                  onSave={(value) => updateNarrativeProperty('Passive_Subject_Sentiment', value)}
                 />
               </div>
 
@@ -300,28 +315,7 @@ export default function NarrativeValidationStep({ incident, approved, onApprove,
                   onValidate={() => setValidatedFields((prev) => ({ ...prev, goal: !prev.goal }))}
                   onSave={(value) => updateNarrativeProperty('Goal', value)}
                 />
-                <ValidateToggle
-                  label="Emocion Buscada"
-                  value={emotion}
-                  validated={!!validatedFields.emotion}
-                  onValidate={() => setValidatedFields((prev) => ({ ...prev, emotion: !prev.emotion }))}
-                  onSave={(value) => updateNarrativeProperty('Emotion', value)}
-                />
-              </div>
-
-              <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-                <EditableField
-                  label="Sentimiento Actor Activo"
-                  value={activeSentiment}
-                  options={['Positive', 'Neutral', 'Negative']}
-                  onSave={(value) => updateNarrativeProperty('Active_Subject_Sentiment', value)}
-                />
-                <EditableField
-                  label="Sentimiento Actor Pasivo"
-                  value={passiveSentiment}
-                  options={['Positive', 'Neutral', 'Negative']}
-                  onSave={(value) => updateNarrativeProperty('Passive_Subject_Sentiment', value)}
-                />
+                <div className="hidden lg:block" />
               </div>
             </div>
           </div>

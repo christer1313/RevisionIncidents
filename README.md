@@ -8,11 +8,13 @@ La aplicacion ahora usa Prisma + PostgreSQL para guardar:
 - JSON original subido
 - JSON revisado
 - Estado del archivo (`PENDING` o `REVIEWED`)
+- JSON agregado con todos los incidentes (`IncidentAggregate`)
 
 Cuando finalizas la revision de un archivo:
 - Se guarda su JSON revisado en base de datos
 - El archivo original se marca como `REVIEWED`
 - Deja de aparecer en la lista de pendientes
+- Se refresca el JSON agregado de todos los incidentes
 
 ## Ejecutar en local
 

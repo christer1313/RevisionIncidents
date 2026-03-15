@@ -20,14 +20,18 @@ interface LoadedSource {
   id: string
   dbId: string
   name: string
+  status: 'PENDING' | 'REVIEWED'
   data: IncidentFile
 }
+
+type ReviewFilter = 'pending' | 'reviewed' | 'all'
 
 interface PendingSourcesResponse {
   sources: Array<{
     id: string
     name: string
     incidentCount: number
+    status: 'PENDING' | 'REVIEWED'
     createdAt: string
     data: IncidentFile
   }>
@@ -37,6 +41,10 @@ interface UploadResponse {
   acceptedCount: number
   rejectedCount: number
   rejected: string[]
+}
+
+interface AggregateResponse {
+  data: IncidentFile
 }
 
 function downloadNamedJSON(data: IncidentFile, fileName: string) {
@@ -54,6 +62,7 @@ export default function IncidentWizard() {
   const [sources, setSources] = useState<LoadedSource[]>([])
   const [sourceIdx, setSourceIdx] = useState(0)
   const [activeIdx, setActiveIdx] = useState(0)
+  const [reviewFilter, setReviewFilter] = useState<ReviewFilter>('pending')
   const [activeTab, setActiveTab] = useState<'overview' | 'narrative'>('overview')
   const [mode, setMode] = useState<'view' | 'edit'>('view')
   const [saved, setSaved] = useState(false)
@@ -68,8 +77,8 @@ export default function IncidentWizard() {
   const incident = file?.incidents[activeIdx]
 
   useEffect(() => {
-    void loadPendingSources()
-  }, [])
+    void loadSourcesByFilter(reviewFilter)
+  }, [reviewFilter])
 
   const canRenderIncident = useMemo(() => {
     return Boolean(file && file.incidents.length > 0 && incident)
@@ -79,11 +88,14 @@ export default function IncidentWizard() {
   const isCurrentApproved = approvedMap[currentIncidentKey] ?? false
 
   const sourceStats = useMemo(() => {
+    const total = sources.length
+
     if (!file || !currentSource) {
-      return { total: 0, pending: 0, pendingFiles: sources.length }
+      const pendingFiles = sources.filter((item) => item.status === 'PENDING').length
+      const reviewedFiles = sources.filter((item) => item.status === 'REVIEWED').length
+      return { total, pending: 0, pendingFiles, reviewedFiles }
     }
 
-    const total = file.incidents.length
     let pending = 0
 
     file.incidents.forEach((_, idx) => {
@@ -91,16 +103,20 @@ export default function IncidentWizard() {
       if (!approvedMap[key]) pending += 1
     })
 
-    return { total, pending, pendingFiles: sources.length }
-  }, [file, currentSource, approvedMap, sources.length])
+    const pendingFiles = sources.filter((item) => item.status === 'PENDING').length
+    const reviewedFiles = sources.filter((item) => item.status === 'REVIEWED').length
 
-  async function loadPendingSources() {
+    return { total, pending, pendingFiles, reviewedFiles }
+  }, [file, currentSource, approvedMap, sources])
+
+  async function loadSourcesByFilter(filter: ReviewFilter) {
     setIsLoadingSources(true)
 
     try {
-      const response = await fetch('/api/incidents', { cache: 'no-store' })
+      const statusParam = filter === 'pending' ? 'PENDING' : filter === 'reviewed' ? 'REVIEWED' : 'ALL'
+      const response = await fetch(`/api/incidents?status=${statusParam}`, { cache: 'no-store' })
       if (!response.ok) {
-        throw new Error('No se pudo cargar la lista de pendientes.')
+        throw new Error('No se pudo cargar la lista de incidentes.')
       }
 
       const payload = (await response.json()) as PendingSourcesResponse
@@ -108,6 +124,7 @@ export default function IncidentWizard() {
         id: item.id,
         dbId: item.id,
         name: item.name,
+        status: item.status,
         data: item.data,
       }))
 
@@ -115,7 +132,7 @@ export default function IncidentWizard() {
       setSourceIdx(0)
       setActiveIdx(0)
     } catch {
-      setUploadMessage('No se pudieron cargar los pendientes desde la base de datos.')
+      setUploadMessage('No se pudieron cargar los incidentes desde la base de datos.')
       setSources([])
       setSourceIdx(0)
       setActiveIdx(0)
@@ -218,7 +235,7 @@ export default function IncidentWizard() {
         acceptedCount = payload.acceptedCount
         rejectedCount += payload.rejectedCount
 
-        await loadPendingSources()
+        await loadSourcesByFilter(reviewFilter)
         setMode('view')
         setActiveTab('overview')
         setSaved(false)
@@ -292,6 +309,21 @@ export default function IncidentWizard() {
     }
   }
 
+  async function handleDownloadAggregate() {
+    try {
+      const response = await fetch('/api/incidents/aggregate', { cache: 'no-store' })
+
+      if (!response.ok) {
+        throw new Error('No se pudo obtener el JSON agregado.')
+      }
+
+      const payload = (await response.json()) as AggregateResponse
+      downloadNamedJSON(payload.data, 'incidents_aggregate.json')
+    } catch {
+      setUploadMessage('No se pudo descargar el JSON agregado.')
+    }
+  }
+
   async function handleFinalizeCurrentFile() {
     if (!currentSource) return
 
@@ -308,13 +340,11 @@ export default function IncidentWizard() {
         throw new Error('No se pudo marcar el archivo como revisado.')
       }
 
-      setSources((prev) => prev.filter((item) => item.dbId !== currentSource.dbId))
-      setSourceIdx(0)
-      setActiveIdx(0)
+      await loadSourcesByFilter(reviewFilter)
       setMode('view')
       setActiveTab('overview')
       setSaved(false)
-      setUploadMessage('Archivo marcado como revisado y guardado en la base de datos.')
+      setUploadMessage('Incidente marcado como revisado y guardado en la base de datos.')
     } catch {
       setUploadMessage('No se pudo cerrar la revision de este archivo.')
     } finally {
@@ -359,7 +389,7 @@ export default function IncidentWizard() {
       setMode('view')
       setActiveTab('overview')
       setSaved(false)
-      setUploadMessage('Archivo eliminado de la base de datos.')
+      setUploadMessage('Incidente eliminado de la base de datos.')
     } catch {
       setUploadMessage('No se pudo eliminar el archivo seleccionado.')
     } finally {
@@ -382,12 +412,16 @@ export default function IncidentWizard() {
 
             <div className="flex items-center gap-3">
               <div className="review-stat">
-                <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Incidentes</p>
+                <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Total incidentes</p>
                 <p className="text-3xl font-bold text-slate-800">{sourceStats.total}</p>
               </div>
               <div className="review-stat border-rose-200 bg-rose-50">
-                <p className="text-[11px] font-bold uppercase tracking-wider text-rose-500">Archivos pendientes</p>
+                <p className="text-[11px] font-bold uppercase tracking-wider text-rose-500">Pendientes</p>
                 <p className="text-3xl font-bold text-rose-600">{sourceStats.pendingFiles}</p>
+              </div>
+              <div className="review-stat border-emerald-200 bg-emerald-50">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-600">Revisados</p>
+                <p className="text-3xl font-bold text-emerald-600">{sourceStats.reviewedFiles}</p>
               </div>
             </div>
           </div>
@@ -443,13 +477,19 @@ export default function IncidentWizard() {
                 <Files className="w-4 h-4" />
                 <span className="hidden sm:inline">Exportar Todo</span>
               </button>
+              <button className="btn-secondary" onClick={handleDownloadAggregate}>
+                <Download className="w-4 h-4" />
+                <span className="hidden sm:inline">JSON agregado</span>
+              </button>
               <button
                 className="btn-primary bg-rose-600 hover:bg-rose-700"
                 onClick={handleFinalizeCurrentFile}
-                disabled={!canRenderIncident || isFinalizingFile || isDeletingFile}
+                disabled={!canRenderIncident || isFinalizingFile || isDeletingFile || currentSource?.status === 'REVIEWED'}
               >
                 <CheckCircle2 className="w-4 h-4" />
-                <span>{isFinalizingFile ? 'Guardando...' : 'Finalizar revision'}</span>
+                <span>
+                  {isFinalizingFile ? 'Guardando...' : currentSource?.status === 'REVIEWED' ? 'Ya revisado' : 'Finalizar revision'}
+                </span>
               </button>
               <button
                 className="btn-secondary border-rose-200 text-rose-700 hover:bg-rose-50"
@@ -464,8 +504,22 @@ export default function IncidentWizard() {
 
           <div className="mt-4 flex flex-col gap-3 border-t border-slate-200 pt-4 md:flex-row md:items-center md:justify-between">
             <div className="flex items-center gap-2 w-full md:w-auto">
+              <label htmlFor="review-filter" className="text-xs text-slate-500 font-semibold uppercase tracking-wide">
+                Mostrar
+              </label>
+              <select
+                id="review-filter"
+                className="input-base py-1.5"
+                value={reviewFilter}
+                onChange={(e) => setReviewFilter(e.target.value as ReviewFilter)}
+              >
+                <option value="pending">Pendientes</option>
+                <option value="reviewed">Revisados</option>
+                <option value="all">Todos</option>
+              </select>
+
               <label htmlFor="source-select" className="text-xs text-slate-500 font-semibold uppercase tracking-wide">
-                Archivo
+                Incidente
               </label>
               <select
                 id="source-select"
@@ -476,7 +530,7 @@ export default function IncidentWizard() {
               >
                 {sources.map((source, idx) => (
                   <option key={source.id} value={idx}>
-                    {source.name} ({source.data.incidents.length})
+                    {(source.data.incident_ids[0] || source.name)} [{source.status === 'REVIEWED' ? 'REVISADO' : 'PENDIENTE'}]
                   </option>
                 ))}
               </select>
@@ -515,39 +569,16 @@ export default function IncidentWizard() {
         <section className="pt-4">
           {isLoadingSources && (
             <div className="card">
-              <p className="text-sm text-slate-700">Cargando archivos pendientes...</p>
-            </div>
-          )}
-
-          {canRenderIncident && file && file.incidents.length > 1 && (
-            <div className="mb-5 flex items-center gap-2">
-              <label htmlFor="incident-select" className="text-xs text-slate-500 font-semibold uppercase tracking-wide">
-                Incidente
-              </label>
-              <select
-                id="incident-select"
-                className="input-base py-1.5"
-                value={activeIdx}
-                onChange={(e) => {
-                  setActiveIdx(Number(e.target.value))
-                  setMode('view')
-                  setActiveTab('overview')
-                  setSaved(false)
-                }}
-              >
-                {file.incidents.map((item, idx) => (
-                  <option key={item.incident_id || idx} value={idx}>
-                    {item.incident_id || `Incident ${idx + 1}`}
-                  </option>
-                ))}
-              </select>
+              <p className="text-sm text-slate-700">Cargando incidentes...</p>
             </div>
           )}
 
           {!isLoadingSources && !canRenderIncident && (
             <div className="card">
               <p className="text-sm text-slate-700">
-                No hay archivos pendientes de revision. Sube nuevos JSON para anadirlos a la cola.
+                {reviewFilter === 'pending' && 'No hay incidentes pendientes de revision.'}
+                {reviewFilter === 'reviewed' && 'No hay incidentes revisados para mostrar.'}
+                {reviewFilter === 'all' && 'No hay incidentes cargados para mostrar.'}
               </p>
             </div>
           )}

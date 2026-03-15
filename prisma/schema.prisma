@@ -12,14 +12,22 @@ enum ReviewStatus {
   REVIEWED
 }
 
-model IncidentUpload {
-  id            String       @id @default(cuid())
-  fileName      String
-  incidentCount Int
-  originalJson  String
-  reviewedJson  String?
-  status        ReviewStatus @default(PENDING)
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
-  reviewedAt    DateTime?
+model Incident {
+  id           String       @id @default(cuid())
+  incidentId   String       @unique
+  sourceFile   String?
+  originalJson String
+  reviewedJson String?
+  status       ReviewStatus @default(PENDING)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  reviewedAt   DateTime?
+}
+
+model IncidentAggregate {
+  id           String   @id
+  aggregatedJson String
+  incidentCount Int     @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }

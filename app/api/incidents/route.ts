@@ -1,62 +1,95 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { normalizeIncidentFile } from '@/lib/incidentNormalization'
-import { IncidentFile } from '@/lib/types'
+import { refreshIncidentAggregate } from '@/lib/incidentAggregate'
+import { Incident, IncidentFile } from '@/lib/types'
 
-interface UploadFilePayload {
-  name: string
-  data: unknown
+type StatusFilter = 'PENDING' | 'REVIEWED' | 'ALL'
+
+function buildWhereByStatus(status: StatusFilter) {
+  if (status === 'ALL') {
+    return {}
+  }
+
+  return { status }
 }
 
-interface UploadRequestBody {
-  files: UploadFilePayload[]
-}
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url)
+  const statusParam = searchParams.get('status')?.toUpperCase()
+  const status: StatusFilter =
+    statusParam === 'REVIEWED' || statusParam === 'ALL' ? statusParam : 'PENDING'
 
-interface PendingSourcePayload {
-  id: string
-  name: string
-  incidentCount: number
-  createdAt: string
-  data: IncidentFile
-}
+  const hasIncidentModel = 'incident' in prisma
 
-export async function GET() {
-  const pending = await prisma.incidentUpload.findMany({
-    where: { status: 'PENDING' },
+  if (hasIncidentModel) {
+    const rows = await prisma.incident.findMany({
+      where: buildWhereByStatus(status),
+      orderBy: { createdAt: 'asc' },
+    })
+
+    const sources = rows
+      .map((row) => {
+        try {
+          const incident = JSON.parse(row.originalJson) as Incident
+          const data: IncidentFile = {
+            count: 1,
+            incident_ids: [incident.incident_id].filter(Boolean),
+            incidents: [incident],
+          }
+
+          return {
+            id: row.id,
+            name: row.sourceFile || `${row.incidentId}.json`,
+            incidentCount: data.incidents.length,
+            status: row.status,
+            createdAt: row.createdAt.toISOString(),
+            data,
+          }
+        } catch {
+          return null
+        }
+      })
+      .filter((item): item is NonNullable<typeof item> => item !== null)
+
+    return NextResponse.json({ sources })
+  }
+
+  const rows = await prisma.incidentUpload.findMany({
+    where: buildWhereByStatus(status),
     orderBy: { createdAt: 'asc' },
   })
 
-  const sources = pending
-    .map((item: { id: string; fileName: string; incidentCount: number; createdAt: Date; originalJson: string }): PendingSourcePayload | null => {
+  const sources = rows
+    .map((row) => {
       try {
-        const parsed = JSON.parse(item.originalJson) as unknown
-        const normalized = normalizeIncidentFile(parsed)
+        const parsed = JSON.parse(row.originalJson) as unknown
+        const data = normalizeIncidentFile(parsed)
 
-        if (!normalized) return null
+        if (!data) return null
 
         return {
-          id: item.id,
-          name: item.fileName,
-          incidentCount: item.incidentCount,
-          createdAt: item.createdAt.toISOString(),
-          data: normalized,
+          id: row.id,
+          name: row.fileName,
+          incidentCount: row.incidentCount,
+          status: row.status,
+          createdAt: row.createdAt.toISOString(),
+          data,
         }
       } catch {
         return null
       }
     })
-    .filter((item: PendingSourcePayload | null): item is PendingSourcePayload => item !== null)
+    .filter((item): item is NonNullable<typeof item> => item !== null)
 
-  return NextResponse.json({
-    sources,
-  })
+  return NextResponse.json({ sources })
 }
 
 export async function POST(request: Request) {
-  let body: UploadRequestBody
+  let body: { files: Array<{ name: string; data: unknown }> }
 
   try {
-    body = (await request.json()) as UploadRequestBody
+    body = (await request.json()) as { files: Array<{ name: string; data: unknown }> }
   } catch {
     return NextResponse.json({ error: 'Invalid request body.' }, { status: 400 })
   }
@@ -65,8 +98,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'files is required and must be a non-empty array.' }, { status: 400 })
   }
 
-  const accepted: string[] = []
+  let acceptedCount = 0
+  let skippedCount = 0
   const rejected: string[] = []
+  const hasIncidentModel = 'incident' in prisma
 
   for (const entry of body.files) {
     if (!entry || typeof entry.name !== 'string') {
@@ -75,26 +110,48 @@ export async function POST(request: Request) {
     }
 
     const normalized = normalizeIncidentFile(entry.data)
-
     if (!normalized) {
       rejected.push(entry.name)
       continue
     }
 
-    await prisma.incidentUpload.create({
-      data: {
-        fileName: entry.name,
-        incidentCount: normalized.incidents.length,
-        originalJson: JSON.stringify(normalized),
-      },
-    })
+    for (const incident of normalized.incidents) {
+      if (!incident.incident_id) {
+        rejected.push(`${entry.name} (sin incident_id)`)
+        continue
+      }
 
-    accepted.push(entry.name)
+      if (hasIncidentModel) {
+        await prisma.incident.upsert({
+          where: { incidentId: incident.incident_id },
+          create: {
+            incidentId: incident.incident_id,
+            sourceFile: entry.name,
+            originalJson: JSON.stringify(incident),
+          },
+          update: {},
+        })
+      } else {
+        await prisma.incidentUpload.create({
+          data: {
+            fileName: entry.name,
+            incidentCount: normalized.incidents.length,
+            originalJson: JSON.stringify(normalized),
+          },
+        })
+      }
+
+      acceptedCount++
+
+      if (!hasIncidentModel) {
+        break
+      }
+    }
   }
 
-  return NextResponse.json({
-    acceptedCount: accepted.length,
-    rejectedCount: rejected.length,
-    rejected,
-  })
+  if (hasIncidentModel) {
+    await refreshIncidentAggregate()
+  }
+
+  return NextResponse.json({ acceptedCount, skippedCount, rejectedCount: rejected.length, rejected })
 }
