@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma'
+import { normalizeIncidentFile } from '@/lib/incidentNormalization'
 import { Incident, IncidentFile } from '@/lib/types'
 
 const ALL_INCIDENTS_AGGREGATE_ID = 'ALL_INCIDENTS'
@@ -24,14 +25,25 @@ export async function refreshIncidentAggregate() {
   })
 
   const incidents: Incident[] = rows
-    .map((row) => {
-      try {
-        return JSON.parse(row.reviewedJson || row.originalJson) as Incident
-      } catch {
-        return null
+    .flatMap((row) => {
+      const payloads = [row.reviewedJson, row.originalJson].filter(Boolean) as string[]
+
+      for (const payload of payloads) {
+        try {
+          const parsed = JSON.parse(payload) as unknown
+          const normalized = normalizeIncidentFile(parsed)
+
+          if (normalized?.incidents?.length) {
+            return normalized.incidents
+          }
+        } catch {
+          continue
+        }
       }
+
+      return []
     })
-    .filter((item): item is Incident => item !== null)
+    .filter((item) => Boolean(item?.incident_id))
 
   const aggregate = buildAggregatedPayload(incidents)
 

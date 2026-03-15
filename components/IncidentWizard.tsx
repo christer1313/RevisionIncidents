@@ -13,7 +13,7 @@ import NarrativeValidationStep from '@/components/steps/NarrativeValidationStep'
 import EditForm from '@/components/EditForm'
 import {
   Eye, Pencil, Download,
-  CheckCircle2, BookOpenText, AlertCircle, Upload, Files, LayoutGrid, Radar, Trash2,
+  CheckCircle2, BookOpenText, AlertCircle, Upload, LayoutGrid, Radar, Trash2,
 } from 'lucide-react'
 
 interface LoadedSource {
@@ -62,7 +62,7 @@ export default function IncidentWizard() {
   const [sources, setSources] = useState<LoadedSource[]>([])
   const [sourceIdx, setSourceIdx] = useState(0)
   const [activeIdx, setActiveIdx] = useState(0)
-  const [reviewFilter, setReviewFilter] = useState<ReviewFilter>('pending')
+  const [reviewFilter, setReviewFilter] = useState<ReviewFilter>('all')
   const [activeTab, setActiveTab] = useState<'overview' | 'narrative'>('overview')
   const [mode, setMode] = useState<'view' | 'edit'>('view')
   const [saved, setSaved] = useState(false)
@@ -295,20 +295,6 @@ export default function IncidentWizard() {
     setApprovedMap((prev) => ({ ...prev, [currentIncidentKey]: true }))
   }
 
-  function handleExportCurrentFile() {
-    if (!currentSource) return
-
-    const base = currentSource.name.replace(/\.json$/i, '')
-    downloadNamedJSON(currentSource.data, `${base}_revised.json`)
-  }
-
-  function handleExportAllFiles() {
-    for (const source of sources) {
-      const base = source.name.replace(/\.json$/i, '')
-      downloadNamedJSON(source.data, `${base}_revised.json`)
-    }
-  }
-
   async function handleDownloadAggregate() {
     try {
       const response = await fetch('/api/incidents/aggregate', { cache: 'no-store' })
@@ -321,6 +307,21 @@ export default function IncidentWizard() {
       downloadNamedJSON(payload.data, 'incidents_aggregate.json')
     } catch {
       setUploadMessage('No se pudo descargar el JSON agregado.')
+    }
+  }
+
+  async function handleDownloadReviewedAggregate() {
+    try {
+      const response = await fetch('/api/incidents/aggregate?status=REVIEWED', { cache: 'no-store' })
+
+      if (!response.ok) {
+        throw new Error('No se pudo obtener el JSON de revisados.')
+      }
+
+      const payload = (await response.json()) as AggregateResponse
+      downloadNamedJSON(payload.data, 'incidents_reviewed.json')
+    } catch {
+      setUploadMessage('No se pudo descargar el JSON de incidentes revisados.')
     }
   }
 
@@ -464,18 +465,9 @@ export default function IncidentWizard() {
                   <CheckCircle2 className="w-4 h-4" /> Guardar
                 </button>
               )}
-              <button
-                className="btn-secondary"
-                onClick={handleExportCurrentFile}
-                title="Download revised JSON"
-                disabled={!canRenderIncident}
-              >
+              <button className="btn-secondary" onClick={handleDownloadReviewedAggregate}>
                 <Download className="w-4 h-4" />
-                <span className="hidden sm:inline">Exportar Archivo</span>
-              </button>
-              <button className="btn-secondary" onClick={handleExportAllFiles} disabled={sources.length === 0}>
-                <Files className="w-4 h-4" />
-                <span className="hidden sm:inline">Exportar Todo</span>
+                <span className="hidden sm:inline">Exportar revisados</span>
               </button>
               <button className="btn-secondary" onClick={handleDownloadAggregate}>
                 <Download className="w-4 h-4" />
@@ -602,11 +594,6 @@ export default function IncidentWizard() {
                 />
               )}
 
-              <div className="mt-8 flex justify-end">
-                <button className="btn-primary" onClick={handleExportCurrentFile}>
-                  <Download className="w-4 h-4" /> Exportar JSON
-                </button>
-              </div>
             </>
           )}
 
@@ -622,9 +609,6 @@ export default function IncidentWizard() {
                 <div className="flex gap-3">
                   <button className="btn-primary bg-emerald-600 hover:bg-emerald-700" onClick={handleSave}>
                     <CheckCircle2 className="w-4 h-4" /> Guardar y Volver
-                  </button>
-                  <button className="btn-secondary" onClick={handleExportCurrentFile}>
-                    <Download className="w-4 h-4" /> Exportar JSON
                   </button>
                 </div>
               </div>
