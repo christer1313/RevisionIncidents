@@ -146,7 +146,6 @@ export default function NarrativeValidationStep({ incident, approved, onApprove,
   }
 
   const p = narrative.properties
-  const title = p.Name?.value || incident.title
   const description = p.Description?.value || 'Sin descripcion narrativa.'
   const activeSubject = p.Active_Subject?.value || ''
   const activeSentiment = p.Active_Subject_Sentiment?.value || ''
@@ -156,12 +155,8 @@ export default function NarrativeValidationStep({ incident, approved, onApprove,
   const goal = p.Goal?.value || ''
   const greimas = p.Greimas_Structure?.value || ''
 
-  const total = 7
+  const total = 4
   const done = Object.values(validatedFields).filter(Boolean).length
-
-  function updateIncidentTitle(value: string) {
-    onIncidentChange({ ...incident, title: value })
-  }
 
   function updateNarrativeProperty(propertyName: string, value: string) {
     const objects = incident.knowledge_graph.objects.map((obj) => {
@@ -194,17 +189,7 @@ export default function NarrativeValidationStep({ incident, approved, onApprove,
     <div className="space-y-5">
       <section className="pending-block">
         <div className="flex flex-col gap-4 border-b border-rose-200 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-wider text-rose-600">Validacion pendiente</p>
-            <div className="mt-1">
-              <EditableField
-                label="Titulo del incidente"
-                value={incident.title}
-                onSave={updateIncidentTitle}
-                placeholder="Titulo del incidente"
-              />
-            </div>
-          </div>
+          <p className="text-xs font-bold uppercase tracking-wider text-rose-600">Validacion pendiente</p>
           <button
             type="button"
             onClick={onApprove}
@@ -223,50 +208,13 @@ export default function NarrativeValidationStep({ incident, approved, onApprove,
 
           <div className="rounded-2xl border border-slate-200 bg-white p-4">
             <div className="flex flex-col gap-3 border-b border-slate-100 pb-4 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <EditableField
-                  label="Nombre de narrativa"
-                  value={title}
-                  onSave={(value) => updateNarrativeProperty('Name', value)}
-                  placeholder="Nombre de la narrativa"
-                />
-                <div className="mt-2">
-                  <EditableField
-                    label="Descripcion"
-                    value={description}
-                    multiline
-                    onSave={(value) => updateNarrativeProperty('Description', value)}
-                    placeholder="Descripcion de narrativa"
-                  />
-                </div>
-              </div>
+              <p className="text-sm font-semibold text-slate-700">Narrativa</p>
               <div className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600">
                 Progreso {done}/{total}
               </div>
             </div>
 
             <div className="mt-4 space-y-4">
-              <div className="field-box">
-                <div className="mb-2 flex items-center justify-between gap-2">
-                  <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Estructura canonica (Greimas)</p>
-                  <button
-                    type="button"
-                    className="validate-btn"
-                    onClick={() => setValidatedFields((prev) => ({ ...prev, greimas: !prev.greimas }))}
-                  >
-                    {validatedFields.greimas ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> : <Circle className="w-3.5 h-3.5" />}
-                    {validatedFields.greimas ? 'Validado' : 'Validar'}
-                  </button>
-                </div>
-                <EditableField
-                  label="Estructura canonica (Greimas)"
-                  value={greimas}
-                  multiline
-                  onSave={(value) => updateNarrativeProperty('Greimas_Structure', value)}
-                  placeholder="Greimas structure"
-                />
-              </div>
-
               <div className="grid grid-cols-1 gap-3 lg:grid-cols-4">
                 <ValidateToggle
                   label="Actor Activo"
@@ -300,20 +248,37 @@ export default function NarrativeValidationStep({ incident, approved, onApprove,
                 />
               </div>
 
+              <EditableField
+                label="Descripcion"
+                value={description}
+                multiline
+                onSave={(value) => updateNarrativeProperty('Description', value)}
+                placeholder="Descripcion de narrativa"
+              />
+
+              <div className="field-box">
+                <p className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-500">Estructura canonica (Greimas)</p>
+                <EditableField
+                  label="Estructura canonica (Greimas)"
+                  value={greimas}
+                  multiline
+                  onSave={(value) => updateNarrativeProperty('Greimas_Structure', value)}
+                  placeholder="Greimas structure"
+                />
+              </div>
+
               <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
-                <ValidateToggle
+                <EditableField
                   label="Objeto de Valor"
                   value={objectOfValue}
-                  validated={!!validatedFields.object}
-                  onValidate={() => setValidatedFields((prev) => ({ ...prev, object: !prev.object }))}
                   onSave={(value) => updateNarrativeProperty('Object_of_Value', value)}
+                  placeholder="Completar campo"
                 />
-                <ValidateToggle
+                <EditableField
                   label="Objetivo (Goal)"
                   value={goal}
-                  validated={!!validatedFields.goal}
-                  onValidate={() => setValidatedFields((prev) => ({ ...prev, goal: !prev.goal }))}
                   onSave={(value) => updateNarrativeProperty('Goal', value)}
+                  placeholder="Completar campo"
                 />
                 <div className="hidden lg:block" />
               </div>

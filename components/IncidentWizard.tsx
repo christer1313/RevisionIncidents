@@ -5,10 +5,6 @@ import { Incident, IncidentFile } from '@/lib/types'
 import { normalizeIncidentFile } from '@/lib/incidentNormalization'
 import JSZip from 'jszip'
 import OverviewStep from '@/components/steps/OverviewStep'
-import ArtifactsStep from '@/components/steps/ArtifactsStep'
-import KnowledgeGraphStep from '@/components/steps/KnowledgeGraphStep'
-import RelationsStep from '@/components/steps/RelationsStep'
-import AnalysisStep from '@/components/steps/AnalysisStep'
 import NarrativeValidationStep from '@/components/steps/NarrativeValidationStep'
 import EditForm from '@/components/EditForm'
 import {
@@ -580,10 +576,6 @@ export default function IncidentWizard() {
               {activeTab === 'overview' ? (
                 <div className="space-y-5">
                   <OverviewStep incident={incident} onIncidentChange={handleIncidentChange} />
-                  <ArtifactsStep incident={incident} />
-                  <KnowledgeGraphStep objects={incident.knowledge_graph.objects.filter((obj) => obj.obj_type !== 'Narrative')} />
-                  <RelationsStep relations={incident.knowledge_graph.relations} />
-                  <AnalysisStep incident={incident} />
                 </div>
               ) : (
                 <NarrativeValidationStep
