@@ -37,8 +37,8 @@ function InlineEditableText({
           <input className="input-base bg-white" value={draft} onChange={(e) => setDraft(e.target.value)} />
         )}
         <div className="flex justify-end gap-2">
-          <button className="btn-secondary py-1" onClick={() => { setEditing(false); setDraft(value) }}>Cancelar</button>
-          <button className="btn-primary py-1" onClick={() => { onSave(draft.trim()); setEditing(false) }}>Guardar</button>
+          <button className="btn-secondary py-1" onClick={() => { setEditing(false); setDraft(value) }}>Cancel</button>
+          <button className="btn-primary py-1" onClick={() => { onSave(draft.trim()); setEditing(false) }}>Save</button>
         </div>
       </div>
     )
@@ -49,7 +49,7 @@ function InlineEditableText({
       type="button"
       onClick={() => { setDraft(value); setEditing(true) }}
       className="mt-2 w-full text-left rounded-lg p-2 -ml-2 hover:bg-indigo-50"
-      title="Click para editar"
+      title="Click to edit"
     >
       <p className="text-xs text-indigo-600 font-semibold uppercase tracking-wide">{label}</p>
       {multiline

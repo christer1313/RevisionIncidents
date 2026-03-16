@@ -9,7 +9,7 @@ import NarrativeValidationStep from '@/components/steps/NarrativeValidationStep'
 import EditForm from '@/components/EditForm'
 import {
   Eye, Pencil, Download,
-  CheckCircle2, BookOpenText, AlertCircle, Upload, LayoutGrid, Radar, Trash2,
+  CheckCircle2, BookOpenText, AlertCircle, Upload, Trash2,
 } from 'lucide-react'
 
 interface LoadedSource {
@@ -59,8 +59,8 @@ export default function IncidentWizard() {
   const [sourceIdx, setSourceIdx] = useState(0)
   const [activeIdx, setActiveIdx] = useState(0)
   const [reviewFilter, setReviewFilter] = useState<ReviewFilter>('all')
-  const [activeTab, setActiveTab] = useState<'overview' | 'narrative'>('overview')
   const [mode, setMode] = useState<'view' | 'edit'>('view')
+  const [validatedFields, setValidatedFields] = useState<Record<string, boolean>>({})
   const [saved, setSaved] = useState(false)
   const [uploadMessage, setUploadMessage] = useState('')
   const [approvedMap, setApprovedMap] = useState<Record<string, boolean>>({})
@@ -112,7 +112,7 @@ export default function IncidentWizard() {
       const statusParam = filter === 'pending' ? 'PENDING' : filter === 'reviewed' ? 'REVIEWED' : 'ALL'
       const response = await fetch(`/api/incidents?status=${statusParam}`, { cache: 'no-store' })
       if (!response.ok) {
-        throw new Error('No se pudo cargar la lista de incidentes.')
+        throw new Error('Failed to load incidents.')
       }
 
       const payload = (await response.json()) as PendingSourcesResponse
@@ -128,7 +128,7 @@ export default function IncidentWizard() {
       setSourceIdx(0)
       setActiveIdx(0)
     } catch {
-      setUploadMessage('No se pudieron cargar los incidentes desde la base de datos.')
+      setUploadMessage('Could not load incidents from the database.')
       setSources([])
       setSourceIdx(0)
       setActiveIdx(0)
@@ -224,7 +224,7 @@ export default function IncidentWizard() {
         })
 
         if (!response.ok) {
-          throw new Error('No se pudo guardar en la base de datos.')
+          throw new Error('Failed to save to the database.')
         }
 
         const payload = (await response.json()) as UploadResponse
@@ -233,21 +233,20 @@ export default function IncidentWizard() {
 
         await loadSourcesByFilter(reviewFilter)
         setMode('view')
-        setActiveTab('overview')
         setSaved(false)
       } catch {
-        setUploadMessage('Hubo un problema guardando los archivos en la base de datos.')
+        setUploadMessage('There was a problem saving the files to the database.')
         event.target.value = ''
         return
       }
     }
 
     if (acceptedCount > 0 && rejectedCount === 0) {
-      setUploadMessage(`${acceptedCount} archivo(s) cargado(s) correctamente en la base de datos.`)
+        setUploadMessage(`${acceptedCount} file(s) loaded successfully into the database.`)
     } else if (acceptedCount > 0 && rejectedCount > 0) {
-      setUploadMessage(`${acceptedCount} archivo(s) cargado(s) y ${rejectedCount} rechazado(s).`)
+        setUploadMessage(`${acceptedCount} file(s) loaded and ${rejectedCount} rejected.`)
     } else {
-      setUploadMessage('No se pudieron cargar archivos. Revisa el formato JSON.')
+      setUploadMessage('Could not load files. Check the JSON format.')
     }
 
     event.target.value = ''
@@ -282,7 +281,6 @@ export default function IncidentWizard() {
     setSourceIdx(nextIdx)
     setActiveIdx(0)
     setMode('view')
-    setActiveTab('overview')
     setSaved(false)
     setUploadMessage('')
   }
@@ -296,13 +294,13 @@ export default function IncidentWizard() {
       const response = await fetch('/api/incidents/aggregate', { cache: 'no-store' })
 
       if (!response.ok) {
-        throw new Error('No se pudo obtener el JSON agregado.')
+        throw new Error('Could not get aggregate JSON.')
       }
 
       const payload = (await response.json()) as AggregateResponse
       downloadNamedJSON(payload.data, 'incidents_aggregate.json')
     } catch {
-      setUploadMessage('No se pudo descargar el JSON agregado.')
+      setUploadMessage('Could not download the aggregate JSON.')
     }
   }
 
@@ -311,13 +309,14 @@ export default function IncidentWizard() {
       const response = await fetch('/api/incidents/aggregate?status=REVIEWED', { cache: 'no-store' })
 
       if (!response.ok) {
-        throw new Error('No se pudo obtener el JSON de revisados.')
+        throw new Error('Could not get reviewed incidents JSON.')
       }
 
       const payload = (await response.json()) as AggregateResponse
-      downloadNamedJSON(payload.data, 'incidents_reviewed.json')
+      const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)
+      downloadNamedJSON(payload.data, `incident_review_${ts}.json`)
     } catch {
-      setUploadMessage('No se pudo descargar el JSON de incidentes revisados.')
+      setUploadMessage('Could not download the reviewed incidents JSON.')
     }
   }
 
@@ -334,16 +333,15 @@ export default function IncidentWizard() {
       })
 
       if (!response.ok) {
-        throw new Error('No se pudo marcar el archivo como revisado.')
+        throw new Error('Could not mark the file as reviewed.')
       }
 
       await loadSourcesByFilter(reviewFilter)
       setMode('view')
-      setActiveTab('overview')
       setSaved(false)
-      setUploadMessage('Incidente marcado como revisado y guardado en la base de datos.')
+      setUploadMessage('Incident marked as reviewed and saved to the database.')
     } catch {
-      setUploadMessage('No se pudo cerrar la revision de este archivo.')
+      setUploadMessage('Could not finalize the review of this file.')
     } finally {
       setIsFinalizingFile(false)
     }
@@ -353,7 +351,7 @@ export default function IncidentWizard() {
     if (!currentSource || isDeletingFile) return
 
     const confirmed = window.confirm(
-      `Se eliminara "${currentSource.name}" de la base de datos. Esta accion no se puede deshacer.`
+      `"${currentSource.name}" will be deleted from the database. This action cannot be undone.`
     )
 
     if (!confirmed) return
@@ -366,7 +364,7 @@ export default function IncidentWizard() {
       })
 
       if (!response.ok) {
-        throw new Error('No se pudo eliminar el archivo.')
+        throw new Error('Could not delete the file.')
       }
 
       setSources((prev) => {
@@ -384,11 +382,10 @@ export default function IncidentWizard() {
       })
 
       setMode('view')
-      setActiveTab('overview')
       setSaved(false)
-      setUploadMessage('Incidente eliminado de la base de datos.')
+      setUploadMessage('Incident deleted from the database.')
     } catch {
-      setUploadMessage('No se pudo eliminar el archivo seleccionado.')
+      setUploadMessage('Could not delete the selected file.')
     } finally {
       setIsDeletingFile(false)
     }
@@ -402,45 +399,28 @@ export default function IncidentWizard() {
             <div className="min-w-0">
               <div className="flex items-center gap-2 text-indigo-600">
                 <BookOpenText className="h-6 w-6" />
-                <h1 className="text-3xl font-bold tracking-tight text-slate-900">Revisor de Desinformacion</h1>
+                <h1 className="text-3xl font-bold tracking-tight text-slate-900">Misinformation Reviewer</h1>
               </div>
-              <p className="mt-1 text-sm text-slate-500">Herramienta de asistencia periodistica para validacion de datos LLM</p>
+              <p className="mt-1 text-sm text-slate-500">Journalistic assistance tool for LLM data validation</p>
             </div>
 
             <div className="flex items-center gap-3">
               <div className="review-stat">
-                <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Total incidentes</p>
+                <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Total Incidents</p>
                 <p className="text-3xl font-bold text-slate-800">{sourceStats.total}</p>
               </div>
               <div className="review-stat border-rose-200 bg-rose-50">
-                <p className="text-[11px] font-bold uppercase tracking-wider text-rose-500">Pendientes</p>
+                <p className="text-[11px] font-bold uppercase tracking-wider text-rose-500">Pending</p>
                 <p className="text-3xl font-bold text-rose-600">{sourceStats.pendingFiles}</p>
               </div>
               <div className="review-stat border-emerald-200 bg-emerald-50">
-                <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-600">Revisados</p>
+                <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-600">Reviewed</p>
                 <p className="text-3xl font-bold text-emerald-600">{sourceStats.reviewedFiles}</p>
               </div>
             </div>
           </div>
 
-          <div className="mt-5 flex flex-col gap-3 border-t border-slate-200 pt-4 lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                className={`review-tab ${activeTab === 'overview' ? 'review-tab-active' : 'review-tab-inactive'}`}
-                onClick={() => setActiveTab('overview')}
-              >
-                <LayoutGrid className="h-4 w-4" /> Vista General
-              </button>
-              <button
-                type="button"
-                className={`review-tab ${activeTab === 'narrative' ? 'review-tab-active' : 'review-tab-inactive'}`}
-                onClick={() => setActiveTab('narrative')}
-              >
-                <Radar className="h-4 w-4" /> Revision de Narrativas
-                <span className="badge bg-rose-100 text-rose-600">{sourceStats.pending}</span>
-              </button>
-            </div>
+          <div className="mt-5 flex flex-col gap-3 border-t border-slate-200 pt-4 lg:flex-row lg:items-center lg:justify-end">
 
             <div className="flex flex-wrap items-center gap-2">
               {saved && (
@@ -454,20 +434,20 @@ export default function IncidentWizard() {
                   onClick={() => { setMode('edit'); setSaved(false) }}
                   disabled={!canRenderIncident}
                 >
-                  <Pencil className="w-4 h-4" /> Editar
+                  <Pencil className="w-4 h-4" /> Edit
                 </button>
               ) : (
                 <button className="btn-primary bg-emerald-600 hover:bg-emerald-700" onClick={handleSave}>
-                  <CheckCircle2 className="w-4 h-4" /> Guardar
+                  <CheckCircle2 className="w-4 h-4" /> Save
                 </button>
               )}
               <button className="btn-secondary" onClick={handleDownloadReviewedAggregate}>
                 <Download className="w-4 h-4" />
-                <span className="hidden sm:inline">Exportar revisados</span>
+                <span className="hidden sm:inline">Export reviewed</span>
               </button>
               <button className="btn-secondary" onClick={handleDownloadAggregate}>
                 <Download className="w-4 h-4" />
-                <span className="hidden sm:inline">JSON agregado</span>
+                <span className="hidden sm:inline">Aggregate JSON</span>
               </button>
               <button
                 className="btn-primary bg-rose-600 hover:bg-rose-700"
@@ -476,7 +456,7 @@ export default function IncidentWizard() {
               >
                 <CheckCircle2 className="w-4 h-4" />
                 <span>
-                  {isFinalizingFile ? 'Guardando...' : currentSource?.status === 'REVIEWED' ? 'Ya revisado' : 'Finalizar revision'}
+                  {isFinalizingFile ? 'Saving...' : currentSource?.status === 'REVIEWED' ? 'Already reviewed' : 'Finalize review'}
                 </span>
               </button>
               <button
@@ -485,7 +465,7 @@ export default function IncidentWizard() {
                 disabled={!currentSource || isDeletingFile || isFinalizingFile}
               >
                 <Trash2 className="w-4 h-4" />
-                <span>{isDeletingFile ? 'Eliminando...' : 'Eliminar archivo'}</span>
+                <span>{isDeletingFile ? 'Deleting...' : 'Delete file'}</span>
               </button>
             </div>
           </div>
@@ -493,7 +473,7 @@ export default function IncidentWizard() {
           <div className="mt-4 flex flex-col gap-3 border-t border-slate-200 pt-4 md:flex-row md:items-center md:justify-between">
             <div className="flex items-center gap-2 w-full md:w-auto">
               <label htmlFor="review-filter" className="text-xs text-slate-500 font-semibold uppercase tracking-wide">
-                Mostrar
+                Show
               </label>
               <select
                 id="review-filter"
@@ -501,13 +481,13 @@ export default function IncidentWizard() {
                 value={reviewFilter}
                 onChange={(e) => setReviewFilter(e.target.value as ReviewFilter)}
               >
-                <option value="pending">Pendientes</option>
-                <option value="reviewed">Revisados</option>
-                <option value="all">Todos</option>
+                <option value="pending">Pending</option>
+                <option value="reviewed">Reviewed</option>
+                <option value="all">All</option>
               </select>
 
               <label htmlFor="source-select" className="text-xs text-slate-500 font-semibold uppercase tracking-wide">
-                Incidente
+                Incident
               </label>
               <select
                 id="source-select"
@@ -518,7 +498,7 @@ export default function IncidentWizard() {
               >
                 {sources.map((source, idx) => (
                   <option key={source.id} value={idx}>
-                    {(source.data.incidents[0]?.title || source.name)} [{source.status === 'REVIEWED' ? 'REVISADO' : 'PENDIENTE'}]
+                    {(source.data.incidents[0]?.title || source.name)} [{source.status === 'REVIEWED' ? 'REVIEWED' : 'PENDING'}]
                   </option>
                 ))}
               </select>
@@ -527,7 +507,7 @@ export default function IncidentWizard() {
             <div className="flex items-center gap-2 w-full md:w-auto md:ml-auto">
               <label className="btn-secondary cursor-pointer">
                 <Upload className="w-4 h-4" />
-                <span>Subir JSON</span>
+                <span>Upload JSON</span>
                 <input
                   type="file"
                   accept="application/json,.json,application/zip,.zip"
@@ -536,7 +516,7 @@ export default function IncidentWizard() {
                   onChange={handleUploadFiles}
                 />
               </label>
-              <span className="text-xs text-slate-500">Acepta JSON sueltos o ZIP con JSON (IncidentFile o Incident[])</span>
+              <span className="text-xs text-slate-500">Accepts JSON files or ZIP with JSON (IncidentFile or Incident[])</span>
             </div>
           </div>
           {uploadMessage && (
@@ -557,35 +537,45 @@ export default function IncidentWizard() {
         <section className="pt-4">
           {isLoadingSources && (
             <div className="card">
-              <p className="text-sm text-slate-700">Cargando incidentes...</p>
+              <p className="text-sm text-slate-700">Loading incidents...</p>
             </div>
           )}
 
           {!isLoadingSources && !canRenderIncident && (
             <div className="card">
               <p className="text-sm text-slate-700">
-                {reviewFilter === 'pending' && 'No hay incidentes pendientes de revision.'}
-                {reviewFilter === 'reviewed' && 'No hay incidentes revisados para mostrar.'}
-                {reviewFilter === 'all' && 'No hay incidentes cargados para mostrar.'}
+                {reviewFilter === 'pending' && 'No pending incidents to review.'}
+                {reviewFilter === 'reviewed' && 'No reviewed incidents to show.'}
+                {reviewFilter === 'all' && 'No incidents loaded.'}
               </p>
             </div>
           )}
 
           {mode === 'view' && canRenderIncident && incident && (
             <>
-              {activeTab === 'overview' ? (
-                <div className="space-y-5">
-                  <OverviewStep incident={incident} onIncidentChange={handleIncidentChange} />
-                </div>
-              ) : (
+              <div className="sticky top-0 z-20 bg-slate-100 py-3">
                 <NarrativeValidationStep
+                  renderMode="sticky-bar"
                   incident={incident}
                   approved={isCurrentApproved}
                   onApprove={handleApproveCurrentIncident}
                   onIncidentChange={handleIncidentChange}
+                  validatedFields={validatedFields}
+                  onValidatedFieldsChange={setValidatedFields}
                 />
-              )}
-
+              </div>
+              <div className="space-y-5">
+                <OverviewStep incident={incident} onIncidentChange={handleIncidentChange} />
+                <NarrativeValidationStep
+                  renderMode="details"
+                  incident={incident}
+                  approved={isCurrentApproved}
+                  onApprove={handleApproveCurrentIncident}
+                  onIncidentChange={handleIncidentChange}
+                  validatedFields={validatedFields}
+                  onValidatedFieldsChange={setValidatedFields}
+                />
+              </div>
             </>
           )}
 
@@ -597,10 +587,10 @@ export default function IncidentWizard() {
               </div>
               <EditForm incident={incident} onChange={handleIncidentChange} />
               <div className="mt-8 flex items-center justify-between">
-                <button className="btn-secondary" onClick={() => setMode('view')}>Cancelar</button>
+                <button className="btn-secondary" onClick={() => setMode('view')}>Cancel</button>
                 <div className="flex gap-3">
                   <button className="btn-primary bg-emerald-600 hover:bg-emerald-700" onClick={handleSave}>
-                    <CheckCircle2 className="w-4 h-4" /> Guardar y Volver
+                    <CheckCircle2 className="w-4 h-4" /> Save and Return
                   </button>
                 </div>
               </div>
