@@ -518,7 +518,7 @@ export default function IncidentWizard() {
               >
                 {sources.map((source, idx) => (
                   <option key={source.id} value={idx}>
-                    {(source.data.incident_ids[0] || source.name)} [{source.status === 'REVIEWED' ? 'REVISADO' : 'PENDIENTE'}]
+                    {(source.data.incidents[0]?.title || source.name)} [{source.status === 'REVIEWED' ? 'REVISADO' : 'PENDIENTE'}]
                   </option>
                 ))}
               </select>
