@@ -8,7 +8,7 @@ import { refreshIncidentAggregate } from '@/lib/incidentAggregate'
 import { incidentData } from '@/lib/incidentData'
 import { Incident, IncidentFile } from '@/lib/types'
 
-type StatusFilter = 'PENDING' | 'REVIEWED' | 'ALL'
+type StatusFilter = 'PENDING' | 'REVIEWED' | 'DOUBT' | 'ALL'
 
 function buildWhereByStatus(status: StatusFilter) {
   if (status === 'ALL') {
@@ -149,7 +149,7 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const statusParam = searchParams.get('status')?.toUpperCase()
   const status: StatusFilter =
-    statusParam === 'REVIEWED' || statusParam === 'ALL' ? statusParam : 'PENDING'
+    statusParam === 'REVIEWED' || statusParam === 'DOUBT' || statusParam === 'ALL' ? statusParam : 'PENDING'
 
   const rows = await prisma.incident.findMany({
     where: buildWhereByStatus(status),

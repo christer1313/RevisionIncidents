@@ -16,18 +16,18 @@ interface LoadedSource {
   id: string
   dbId: string
   name: string
-  status: 'PENDING' | 'REVIEWED'
+  status: 'PENDING' | 'REVIEWED' | 'DOUBT'
   data: IncidentFile
 }
 
-type ReviewFilter = 'pending' | 'reviewed' | 'all'
+type ReviewFilter = 'pending' | 'reviewed' | 'doubt' | 'all'
 
 interface PendingSourcesResponse {
   sources: Array<{
     id: string
     name: string
     incidentCount: number
-    status: 'PENDING' | 'REVIEWED'
+    status: 'PENDING' | 'REVIEWED' | 'DOUBT'
     createdAt: string
     data: IncidentFile
   }>
@@ -60,7 +60,7 @@ export default function IncidentWizard() {
   const [activeIdx, setActiveIdx] = useState(0)
   const [reviewFilter, setReviewFilter] = useState<ReviewFilter>('all')
   const [mode, setMode] = useState<'view' | 'edit'>('view')
-  const [validatedFields, setValidatedFields] = useState<Record<string, boolean>>({})
+  const [validatedFieldsByIncident, setValidatedFieldsByIncident] = useState<Record<string, Record<string, boolean>>>({})
   const [saved, setSaved] = useState(false)
   const [uploadMessage, setUploadMessage] = useState('')
   const [approvedMap, setApprovedMap] = useState<Record<string, boolean>>({})
@@ -82,6 +82,7 @@ export default function IncidentWizard() {
 
   const currentIncidentKey = `${currentSource?.id ?? 'none'}:${activeIdx}`
   const isCurrentApproved = approvedMap[currentIncidentKey] ?? false
+  const currentValidatedFields = validatedFieldsByIncident[currentIncidentKey] ?? {}
 
   const sourceStats = useMemo(() => {
     const total = sources.length
@@ -89,7 +90,8 @@ export default function IncidentWizard() {
     if (!file || !currentSource) {
       const pendingFiles = sources.filter((item) => item.status === 'PENDING').length
       const reviewedFiles = sources.filter((item) => item.status === 'REVIEWED').length
-      return { total, pending: 0, pendingFiles, reviewedFiles }
+      const doubtFiles = sources.filter((item) => item.status === 'DOUBT').length
+      return { total, pending: 0, pendingFiles, reviewedFiles, doubtFiles }
     }
 
     let pending = 0
@@ -101,15 +103,23 @@ export default function IncidentWizard() {
 
     const pendingFiles = sources.filter((item) => item.status === 'PENDING').length
     const reviewedFiles = sources.filter((item) => item.status === 'REVIEWED').length
+    const doubtFiles = sources.filter((item) => item.status === 'DOUBT').length
 
-    return { total, pending, pendingFiles, reviewedFiles }
+    return { total, pending, pendingFiles, reviewedFiles, doubtFiles }
   }, [file, currentSource, approvedMap, sources])
 
   async function loadSourcesByFilter(filter: ReviewFilter) {
     setIsLoadingSources(true)
 
     try {
-      const statusParam = filter === 'pending' ? 'PENDING' : filter === 'reviewed' ? 'REVIEWED' : 'ALL'
+      const statusParam =
+        filter === 'pending'
+          ? 'PENDING'
+          : filter === 'reviewed'
+            ? 'REVIEWED'
+            : filter === 'doubt'
+              ? 'DOUBT'
+              : 'ALL'
       const response = await fetch(`/api/incidents?status=${statusParam}`, { cache: 'no-store' })
       if (!response.ok) {
         throw new Error('Failed to load incidents.')
@@ -289,6 +299,13 @@ export default function IncidentWizard() {
     setApprovedMap((prev) => ({ ...prev, [currentIncidentKey]: true }))
   }
 
+  function handleValidatedFieldsChangeForCurrent(fields: Record<string, boolean>) {
+    setValidatedFieldsByIncident((prev) => ({
+      ...prev,
+      [currentIncidentKey]: fields,
+    }))
+  }
+
   async function handleDownloadAggregate() {
     try {
       const response = await fetch('/api/incidents/aggregate', { cache: 'no-store' })
@@ -329,7 +346,7 @@ export default function IncidentWizard() {
       const response = await fetch(`/api/incidents/${currentSource.dbId}/review`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ reviewedData: currentSource.data }),
+        body: JSON.stringify({ reviewedData: currentSource.data, status: 'REVIEWED' }),
       })
 
       if (!response.ok) {
@@ -342,6 +359,33 @@ export default function IncidentWizard() {
       setUploadMessage('Incident marked as reviewed and saved to the database.')
     } catch {
       setUploadMessage('Could not finalize the review of this file.')
+    } finally {
+      setIsFinalizingFile(false)
+    }
+  }
+
+  async function handleMarkCurrentFileAsDoubt() {
+    if (!currentSource) return
+
+    setIsFinalizingFile(true)
+
+    try {
+      const response = await fetch(`/api/incidents/${currentSource.dbId}/review`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reviewedData: currentSource.data, status: 'DOUBT' }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Could not mark the file as doubt.')
+      }
+
+      await loadSourcesByFilter(reviewFilter)
+      setMode('view')
+      setSaved(false)
+      setUploadMessage('Incident marked as doubt and saved to the database.')
+    } catch {
+      setUploadMessage('Could not mark this file as doubt.')
     } finally {
       setIsFinalizingFile(false)
     }
@@ -417,6 +461,10 @@ export default function IncidentWizard() {
                 <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-600">Reviewed</p>
                 <p className="text-3xl font-bold text-emerald-600">{sourceStats.reviewedFiles}</p>
               </div>
+              <div className="review-stat border-amber-200 bg-amber-50">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-amber-600">Doubt</p>
+                <p className="text-3xl font-bold text-amber-600">{sourceStats.doubtFiles}</p>
+              </div>
             </div>
           </div>
 
@@ -460,6 +508,14 @@ export default function IncidentWizard() {
                 </span>
               </button>
               <button
+                className="btn-secondary border-amber-200 text-amber-700 hover:bg-amber-50"
+                onClick={handleMarkCurrentFileAsDoubt}
+                disabled={!canRenderIncident || isFinalizingFile || isDeletingFile || currentSource?.status === 'DOUBT'}
+              >
+                <AlertCircle className="w-4 h-4" />
+                <span>{isFinalizingFile ? 'Saving...' : currentSource?.status === 'DOUBT' ? 'Already doubt' : 'Mark as doubt'}</span>
+              </button>
+              <button
                 className="btn-secondary border-rose-200 text-rose-700 hover:bg-rose-50"
                 onClick={handleDeleteCurrentFile}
                 disabled={!currentSource || isDeletingFile || isFinalizingFile}
@@ -483,6 +539,7 @@ export default function IncidentWizard() {
               >
                 <option value="pending">Pending</option>
                 <option value="reviewed">Reviewed</option>
+                <option value="doubt">Doubt</option>
                 <option value="all">All</option>
               </select>
 
@@ -498,7 +555,7 @@ export default function IncidentWizard() {
               >
                 {sources.map((source, idx) => (
                   <option key={source.id} value={idx}>
-                    {(source.data.incidents[0]?.title || source.name)} [{source.status === 'REVIEWED' ? 'REVIEWED' : 'PENDING'}]
+                    {(source.data.incidents[0]?.title || source.name)} [{source.status}]
                   </option>
                 ))}
               </select>
@@ -546,6 +603,7 @@ export default function IncidentWizard() {
               <p className="text-sm text-slate-700">
                 {reviewFilter === 'pending' && 'No pending incidents to review.'}
                 {reviewFilter === 'reviewed' && 'No reviewed incidents to show.'}
+                {reviewFilter === 'doubt' && 'No incidents marked as doubt to show.'}
                 {reviewFilter === 'all' && 'No incidents loaded.'}
               </p>
             </div>
@@ -560,8 +618,8 @@ export default function IncidentWizard() {
                   approved={isCurrentApproved}
                   onApprove={handleApproveCurrentIncident}
                   onIncidentChange={handleIncidentChange}
-                  validatedFields={validatedFields}
-                  onValidatedFieldsChange={setValidatedFields}
+                  validatedFields={currentValidatedFields}
+                  onValidatedFieldsChange={handleValidatedFieldsChangeForCurrent}
                 />
               </div>
               <div className="space-y-5">
@@ -572,8 +630,8 @@ export default function IncidentWizard() {
                   approved={isCurrentApproved}
                   onApprove={handleApproveCurrentIncident}
                   onIncidentChange={handleIncidentChange}
-                  validatedFields={validatedFields}
-                  onValidatedFieldsChange={setValidatedFields}
+                  validatedFields={currentValidatedFields}
+                  onValidatedFieldsChange={handleValidatedFieldsChangeForCurrent}
                 />
               </div>
             </>

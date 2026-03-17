@@ -45,9 +45,9 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const statusParam = searchParams.get('status')?.toUpperCase()
 
-  if (statusParam === 'REVIEWED') {
-    const reviewedRows = await prisma.incident.findMany({
-      where: { status: 'REVIEWED' },
+  if (statusParam === 'REVIEWED' || statusParam === 'DOUBT') {
+    const rows = await prisma.incident.findMany({
+      where: { status: statusParam },
       orderBy: { createdAt: 'asc' },
       select: {
         reviewedJson: true,
@@ -55,7 +55,7 @@ export async function GET(request: Request) {
       },
     })
 
-    return NextResponse.json({ data: buildIncidentFileFromRows(reviewedRows) })
+    return NextResponse.json({ data: buildIncidentFileFromRows(rows) })
   }
 
   await refreshIncidentAggregate()

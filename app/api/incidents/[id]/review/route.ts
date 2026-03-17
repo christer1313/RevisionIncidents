@@ -8,13 +8,15 @@ export async function PATCH(
 ) {
   const { id } = await context.params
 
-  let body: { reviewedData: unknown }
+  let body: { reviewedData: unknown; status?: 'REVIEWED' | 'DOUBT' }
 
   try {
-    body = (await request.json()) as { reviewedData: unknown }
+    body = (await request.json()) as { reviewedData: unknown; status?: 'REVIEWED' | 'DOUBT' }
   } catch {
     return NextResponse.json({ error: 'Invalid request body.' }, { status: 400 })
   }
+
+  const nextStatus = body.status === 'DOUBT' ? 'DOUBT' : 'REVIEWED'
 
   const existing = await prisma.incident.findUnique({ where: { id } })
 
@@ -26,7 +28,7 @@ export async function PATCH(
     where: { id },
     data: {
       reviewedJson: JSON.stringify(body.reviewedData),
-      status: 'REVIEWED',
+      status: nextStatus,
       reviewedAt: new Date(),
     },
   })
