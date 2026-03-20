@@ -256,10 +256,10 @@ export default function EditForm({ incident, onChange }: Props) {
         </Field>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <Field label="Author">
-            <input className="input-base" value={incident.author} onChange={e => set('author', e.target.value)} />
+            <input className="input-base" value={incident.author ?? ''} onChange={e => set('author', e.target.value)} />
           </Field>
           <Field label="Organization">
-            <input className="input-base" value={incident.organization} onChange={e => set('organization', e.target.value)} />
+            <input className="input-base" value={incident.organization ?? ''} onChange={e => set('organization', e.target.value)} />
           </Field>
           <Field label="Publication Date">
             <input className="input-base" value={incident.publication_date} onChange={e => set('publication_date', e.target.value)} />
@@ -267,10 +267,16 @@ export default function EditForm({ incident, onChange }: Props) {
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Field label="Source File">
-            <input className="input-base font-mono" value={incident.source_file} onChange={e => set('source_file', e.target.value)} />
+            <input className="input-base" value={incident.source_file} onChange={e => set('source_file', e.target.value)} />
           </Field>
           <Field label="Outlet Count">
-            <input className="input-base" type="number" min={0} value={incident.outlet_count} onChange={e => set('outlet_count', parseInt(e.target.value, 10) || 0)} />
+            <input
+              className="input-base"
+              type="number"
+              min={0}
+              value={incident.outlet_count}
+              onChange={e => set('outlet_count', Number(e.target.value) || 0)}
+            />
           </Field>
         </div>
         <Field label="Tags">

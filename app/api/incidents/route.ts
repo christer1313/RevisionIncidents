@@ -159,7 +159,14 @@ export async function GET(request: Request) {
   const sources = rows
     .map((row) => {
       try {
-        const incident = JSON.parse(row.originalJson) as Incident
+        const parsed = JSON.parse(row.originalJson) as unknown
+        const normalized = normalizeIncidentFile(parsed)
+
+        if (!normalized?.incidents?.length) {
+          return null
+        }
+
+        const incident = normalized.incidents[0]
         const data: IncidentFile = {
           count: 1,
           incident_ids: [incident.incident_id].filter(Boolean),

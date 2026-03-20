@@ -52,8 +52,8 @@ export interface Incident {
   summary: string
   tags: string[]
   artifacts: Artifact[]
-  author: string
-  organization: string
+  author?: string
+  organization?: string
   location: Location
   knowledge_graph: KnowledgeGraph
   summary_euvsdisinfo: string

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { refreshIncidentAggregate } from '@/lib/incidentAggregate'
+import { normalizeIncidentFile } from '@/lib/incidentNormalization'
 
 export async function PATCH(
   request: Request,
@@ -17,6 +18,11 @@ export async function PATCH(
   }
 
   const nextStatus = body.status === 'DOUBT' ? 'DOUBT' : 'REVIEWED'
+  const normalizedReviewed = normalizeIncidentFile(body.reviewedData)
+
+  if (!normalizedReviewed) {
+    return NextResponse.json({ error: 'Invalid reviewedData payload.' }, { status: 400 })
+  }
 
   const existing = await prisma.incident.findUnique({ where: { id } })
 
@@ -27,7 +33,7 @@ export async function PATCH(
   await prisma.incident.update({
     where: { id },
     data: {
-      reviewedJson: JSON.stringify(body.reviewedData),
+      reviewedJson: JSON.stringify(normalizedReviewed),
       status: nextStatus,
       reviewedAt: new Date(),
     },
