@@ -1,20 +1,23 @@
 # RevisionIncidents
 
-Aplicacion Next.js para revisar incidentes y persistir el flujo de analisis.
+Aplicacion Next.js para revisar incidentes y persistir el flujo de analisis en archivos JSON.
 
 ## Persistencia de archivos
 
-La aplicacion ahora usa Prisma + PostgreSQL para guardar:
-- JSON original subido
-- JSON revisado
-- Estado del archivo (`PENDING` o `REVIEWED`)
-- JSON agregado con todos los incidentes (`IncidentAggregate`)
+La aplicacion construye una base de datos en memoria al arrancar tomando incidentes desde `jsons.zip`.
+
+El estado de revision se persiste en dos archivos JSON:
+- `reviewed.json`: incidentes marcados como revisados
+- `doubt.json`: incidentes marcados como duda
+
+Cada archivo guarda el `incidentId`, fecha de actualizacion y el payload revisado.
 
 Cuando finalizas la revision de un archivo:
-- Se guarda su JSON revisado en base de datos
+- Se guarda su JSON revisado en `reviewed.json` o `doubt.json`
+- Se agrega o actualiza la entrada del `incidentId` correspondiente en el archivo de estado
 - El archivo original se marca como `REVIEWED`
 - Deja de aparecer en la lista de pendientes
-- Se refresca el JSON agregado de todos los incidentes
+- El agregado se reconstruye combinando base en memoria + estados persistidos
 
 ## Ejecutar en local
 
@@ -24,13 +27,7 @@ Cuando finalizas la revision de un archivo:
 npm install
 ```
 
-2. Aplicar migraciones de base de datos:
-
-```bash
-npx prisma migrate dev
-```
-
-3. Levantar el entorno de desarrollo:
+2. Levantar el entorno de desarrollo:
 
 ```bash
 npm run dev
@@ -38,15 +35,8 @@ npm run dev
 
 ## Endpoints
 
-- `GET /api/incidents`: lista archivos pendientes para revisar
+- `GET /api/incidents`: lista incidentes segun estado
 - `POST /api/incidents`: guarda nuevos archivos subidos en estado pendiente
-- `PATCH /api/incidents/:id/review`: guarda JSON revisado y marca el archivo como revisado
-
-## Nota para Vercel
-
-Con Neon o Vercel Postgres, la base de datos si es persistente entre despliegues e instancias serverless.
-
-Pasos minimos:
-1. Configurar `DATABASE_URL` en Variables de Entorno de Vercel.
-2. Ejecutar migraciones en produccion con `npx prisma migrate deploy`.
-3. Redeploy del proyecto.
+- `PATCH /api/incidents/:id/review`: guarda JSON revisado y marca el archivo
+- `DELETE /api/incidents/:id`: elimina un incidente del almacenamiento local
+- `GET /api/incidents/aggregate`: devuelve el agregado de incidentes

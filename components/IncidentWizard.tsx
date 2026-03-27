@@ -138,7 +138,7 @@ export default function IncidentWizard() {
       setSourceIdx(0)
       setActiveIdx(0)
     } catch {
-      setUploadMessage('Could not load incidents from the database.')
+      setUploadMessage('Could not load incidents from local JSON storage.')
       setSources([])
       setSourceIdx(0)
       setActiveIdx(0)
@@ -234,7 +234,7 @@ export default function IncidentWizard() {
         })
 
         if (!response.ok) {
-          throw new Error('Failed to save to the database.')
+          throw new Error('Failed to save incidents to local storage.')
         }
 
         const payload = (await response.json()) as UploadResponse
@@ -245,14 +245,14 @@ export default function IncidentWizard() {
         setMode('view')
         setSaved(false)
       } catch {
-        setUploadMessage('There was a problem saving the files to the database.')
+        setUploadMessage('There was a problem saving the files to local storage.')
         event.target.value = ''
         return
       }
     }
 
     if (acceptedCount > 0 && rejectedCount === 0) {
-        setUploadMessage(`${acceptedCount} file(s) loaded successfully into the database.`)
+      setUploadMessage(`${acceptedCount} file(s) loaded successfully into local storage.`)
     } else if (acceptedCount > 0 && rejectedCount > 0) {
         setUploadMessage(`${acceptedCount} file(s) loaded and ${rejectedCount} rejected.`)
     } else {
@@ -356,7 +356,7 @@ export default function IncidentWizard() {
       await loadSourcesByFilter(reviewFilter)
       setMode('view')
       setSaved(false)
-      setUploadMessage('Incident marked as reviewed and saved to the database.')
+      setUploadMessage('Incident marked as reviewed and saved to local storage.')
     } catch {
       setUploadMessage('Could not finalize the review of this file.')
     } finally {
@@ -395,7 +395,7 @@ export default function IncidentWizard() {
     if (!currentSource || isDeletingFile) return
 
     const confirmed = window.confirm(
-      `"${currentSource.name}" will be deleted from the database. This action cannot be undone.`
+      `"${currentSource.name}" will be deleted from local storage. This action cannot be undone.`
     )
 
     if (!confirmed) return
@@ -427,7 +427,7 @@ export default function IncidentWizard() {
 
       setMode('view')
       setSaved(false)
-      setUploadMessage('Incident deleted from the database.')
+      setUploadMessage('Incident deleted from local storage.')
     } catch {
       setUploadMessage('Could not delete the selected file.')
     } finally {
