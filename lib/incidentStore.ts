@@ -38,6 +38,7 @@ const ZIP_PATH = path.join(process.cwd(), 'jsons.zip')
 const FALLBACK_JSON_PATH = path.join(process.cwd(), 'incidents_2026-01-03.json')
 const REVIEWED_PATH = path.join(process.cwd(), 'reviewed.json')
 const DOUBT_PATH = path.join(process.cwd(), 'doubt.json')
+const EDITS_PATH = path.join(process.cwd(), 'edits.json')
 
 const runtimeUploads = new Map<string, StoredIncidentRecord>()
 const runtimeDeleted = new Set<string>()
@@ -257,15 +258,19 @@ function mergeRuntimeRecords() {
 async function getStatuses() {
   const reviewed = await readStatusFile(REVIEWED_PATH)
   const doubt = await readStatusFile(DOUBT_PATH)
+  const edits = await readStatusFile(EDITS_PATH)
 
   const reviewedMap = new Map(reviewed.incidents.map((entry) => [entry.incidentId, entry]))
   const doubtMap = new Map(doubt.incidents.map((entry) => [entry.incidentId, entry]))
+  const editsMap = new Map(edits.incidents.map((entry) => [entry.incidentId, entry]))
 
   return {
     reviewed,
     doubt,
+    edits,
     reviewedMap,
     doubtMap,
+    editsMap,
   }
 }
 
@@ -276,7 +281,7 @@ export async function seedIncidentsIfEmpty() {
 export async function listIncidentSources(status: StatusFilter) {
   await ensureInMemoryStore()
   const records = mergeRuntimeRecords()
-  const { reviewedMap, doubtMap } = await getStatuses()
+  const { reviewedMap, doubtMap, editsMap } = await getStatuses()
 
   const sourceRows = Array.from(records.values()).map((record) => {
     if (runtimeDeleted.has(record.incidentId)) {
@@ -285,8 +290,9 @@ export async function listIncidentSources(status: StatusFilter) {
 
     const doubt = doubtMap.get(record.incidentId)
     const reviewed = reviewedMap.get(record.incidentId)
+    const edited = editsMap.get(record.incidentId)
     const resolvedStatus: IncidentStatus = doubt ? 'DOUBT' : reviewed ? 'REVIEWED' : 'PENDING'
-    const resolvedData = doubt?.data ?? reviewed?.data ?? record.baseData
+    const resolvedData = doubt?.data ?? reviewed?.data ?? edited?.data ?? record.baseData
 
     return {
       id: record.id,
@@ -358,7 +364,7 @@ export async function upsertIncidentsFromFiles(files: Array<{ name: string; data
   }
 }
 
-export async function updateIncidentReview(id: string, reviewedData: unknown, status: 'REVIEWED' | 'DOUBT') {
+export async function updateIncidentReview(id: string, reviewedData: unknown, status: 'REVIEWED' | 'DOUBT' | 'KEEP') {
   await ensureInMemoryStore()
   const records = mergeRuntimeRecords()
   const target = records.get(id)
@@ -374,7 +380,7 @@ export async function updateIncidentReview(id: string, reviewedData: unknown, st
   }
 
   const now = new Date().toISOString()
-  const { reviewed, doubt } = await getStatuses()
+  const { reviewed, doubt, edits, reviewedMap, doubtMap } = await getStatuses()
   const nextEntry: StatusEntry = {
     incidentId: target.incidentId,
     updatedAt: now,
@@ -383,15 +389,23 @@ export async function updateIncidentReview(id: string, reviewedData: unknown, st
 
   const nextReviewedEntries = reviewed.incidents.filter((entry) => entry.incidentId !== target.incidentId)
   const nextDoubtEntries = doubt.incidents.filter((entry) => entry.incidentId !== target.incidentId)
+  const nextEditedEntries = edits.incidents.filter((entry) => entry.incidentId !== target.incidentId)
 
   if (status === 'REVIEWED') {
     nextReviewedEntries.push(nextEntry)
-  } else {
+  } else if (status === 'DOUBT') {
     nextDoubtEntries.push(nextEntry)
+  } else if (reviewedMap.has(target.incidentId)) {
+    nextReviewedEntries.push(nextEntry)
+  } else if (doubtMap.has(target.incidentId)) {
+    nextDoubtEntries.push(nextEntry)
+  } else {
+    nextEditedEntries.push(nextEntry)
   }
 
   await writeStatusFile(REVIEWED_PATH, { version: 1, incidents: nextReviewedEntries })
   await writeStatusFile(DOUBT_PATH, { version: 1, incidents: nextDoubtEntries })
+  await writeStatusFile(EDITS_PATH, { version: 1, incidents: nextEditedEntries })
 
   return { ok: true as const }
 }
@@ -408,12 +422,14 @@ export async function deleteIncidentById(id: string) {
   runtimeUploads.delete(target.incidentId)
   runtimeDeleted.add(target.incidentId)
 
-  const { reviewed, doubt } = await getStatuses()
+  const { reviewed, doubt, edits } = await getStatuses()
   const nextReviewed = reviewed.incidents.filter((entry) => entry.incidentId !== target.incidentId)
   const nextDoubt = doubt.incidents.filter((entry) => entry.incidentId !== target.incidentId)
+  const nextEdits = edits.incidents.filter((entry) => entry.incidentId !== target.incidentId)
 
   await writeStatusFile(REVIEWED_PATH, { version: 1, incidents: nextReviewed })
   await writeStatusFile(DOUBT_PATH, { version: 1, incidents: nextDoubt })
+  await writeStatusFile(EDITS_PATH, { version: 1, incidents: nextEdits })
 
   return true
 }
@@ -421,7 +437,7 @@ export async function deleteIncidentById(id: string) {
 export async function getAggregate(status?: 'REVIEWED' | 'DOUBT'): Promise<IncidentFile> {
   await ensureInMemoryStore()
   const records = mergeRuntimeRecords()
-  const { reviewedMap, doubtMap } = await getStatuses()
+  const { reviewedMap, doubtMap, editsMap } = await getStatuses()
 
   const incidents = Array.from(records.values()).flatMap((record) => {
     if (runtimeDeleted.has(record.incidentId)) {
@@ -430,6 +446,7 @@ export async function getAggregate(status?: 'REVIEWED' | 'DOUBT'): Promise<Incid
 
     const reviewed = reviewedMap.get(record.incidentId)
     const doubt = doubtMap.get(record.incidentId)
+    const edited = editsMap.get(record.incidentId)
 
     if (status === 'REVIEWED') {
       return reviewed?.data.incidents ?? []
@@ -439,7 +456,7 @@ export async function getAggregate(status?: 'REVIEWED' | 'DOUBT'): Promise<Incid
       return doubt?.data.incidents ?? []
     }
 
-    return doubt?.data.incidents ?? reviewed?.data.incidents ?? record.baseData.incidents
+    return doubt?.data.incidents ?? reviewed?.data.incidents ?? edited?.data.incidents ?? record.baseData.incidents
   })
 
   if (incidents.length === 0) {

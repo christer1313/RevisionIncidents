@@ -7,15 +7,15 @@ export async function PATCH(
 ) {
   const { id } = await context.params
 
-  let body: { reviewedData: unknown; status?: 'REVIEWED' | 'DOUBT' }
+  let body: { reviewedData: unknown; status?: 'REVIEWED' | 'DOUBT' | 'KEEP' }
 
   try {
-    body = (await request.json()) as { reviewedData: unknown; status?: 'REVIEWED' | 'DOUBT' }
+    body = (await request.json()) as { reviewedData: unknown; status?: 'REVIEWED' | 'DOUBT' | 'KEEP' }
   } catch {
     return NextResponse.json({ error: 'Invalid request body.' }, { status: 400 })
   }
 
-  const nextStatus = body.status === 'DOUBT' ? 'DOUBT' : 'REVIEWED'
+  const nextStatus = body.status === 'DOUBT' ? 'DOUBT' : body.status === 'KEEP' ? 'KEEP' : 'REVIEWED'
   const result = await updateIncidentReview(id, body.reviewedData, nextStatus)
 
   if (!result.ok) {

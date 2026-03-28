@@ -43,6 +43,24 @@ interface AggregateResponse {
   data: IncidentFile
 }
 
+function statusLabel(status?: LoadedSource['status']) {
+  if (status === 'REVIEWED') return 'Reviewed'
+  if (status === 'DOUBT') return 'Doubt'
+  return 'Pending'
+}
+
+function statusClasses(status?: LoadedSource['status']) {
+  if (status === 'REVIEWED') {
+    return 'border-emerald-200 bg-emerald-50 text-emerald-700'
+  }
+
+  if (status === 'DOUBT') {
+    return 'border-amber-200 bg-amber-50 text-amber-700'
+  }
+
+  return 'border-rose-200 bg-rose-50 text-rose-700'
+}
+
 function downloadNamedJSON(data: IncidentFile, fileName: string) {
   const str = JSON.stringify(data, null, 2)
   const blob = new Blob([str], { type: 'application/json' })
@@ -62,6 +80,7 @@ export default function IncidentWizard() {
   const [mode, setMode] = useState<'view' | 'edit'>('view')
   const [validatedFieldsByIncident, setValidatedFieldsByIncident] = useState<Record<string, Record<string, boolean>>>({})
   const [saved, setSaved] = useState(false)
+  const [isSavingEdits, setIsSavingEdits] = useState(false)
   const [uploadMessage, setUploadMessage] = useState('')
   const [approvedMap, setApprovedMap] = useState<Record<string, boolean>>({})
   const [isLoadingSources, setIsLoadingSources] = useState(true)
@@ -282,9 +301,30 @@ export default function IncidentWizard() {
     setSaved(false)
   }
 
-  function handleSave() {
-    setSaved(true)
-    setMode('view')
+  async function handleSave() {
+    if (!currentSource) return
+
+    setIsSavingEdits(true)
+
+    try {
+      const response = await fetch(`/api/incidents/${currentSource.dbId}/review`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reviewedData: currentSource.data, status: 'KEEP' }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Could not save incident edits.')
+      }
+
+      setSaved(true)
+      setMode('view')
+      setUploadMessage('Changes saved. They will be visible when you reopen this incident.')
+    } catch {
+      setUploadMessage('Could not save changes for this incident.')
+    } finally {
+      setIsSavingEdits(false)
+    }
   }
 
   function handleSourceChange(nextIdx: number) {
@@ -353,7 +393,11 @@ export default function IncidentWizard() {
         throw new Error('Could not mark the file as reviewed.')
       }
 
-      await loadSourcesByFilter(reviewFilter)
+      if (reviewFilter === 'pending') {
+        setReviewFilter('all')
+      } else {
+        await loadSourcesByFilter(reviewFilter)
+      }
       setMode('view')
       setSaved(false)
       setUploadMessage('Incident marked as reviewed and saved to local storage.')
@@ -380,7 +424,11 @@ export default function IncidentWizard() {
         throw new Error('Could not mark the file as doubt.')
       }
 
-      await loadSourcesByFilter(reviewFilter)
+      if (reviewFilter === 'pending') {
+        setReviewFilter('all')
+      } else {
+        await loadSourcesByFilter(reviewFilter)
+      }
       setMode('view')
       setSaved(false)
       setUploadMessage('Incident marked as doubt and saved to the database.')
@@ -480,13 +528,17 @@ export default function IncidentWizard() {
                 <button
                   className="btn-primary"
                   onClick={() => { setMode('edit'); setSaved(false) }}
-                  disabled={!canRenderIncident}
+                  disabled={!canRenderIncident || isSavingEdits}
                 >
                   <Pencil className="w-4 h-4" /> Edit
                 </button>
               ) : (
-                <button className="btn-primary bg-emerald-600 hover:bg-emerald-700" onClick={handleSave}>
-                  <CheckCircle2 className="w-4 h-4" /> Save
+                <button
+                  className="btn-primary bg-emerald-600 hover:bg-emerald-700"
+                  onClick={handleSave}
+                  disabled={!canRenderIncident || isSavingEdits || isFinalizingFile || isDeletingFile}
+                >
+                  <CheckCircle2 className="w-4 h-4" /> {isSavingEdits ? 'Saving...' : 'Save'}
                 </button>
               )}
               <button className="btn-secondary" onClick={handleDownloadReviewedAggregate}>
@@ -528,6 +580,9 @@ export default function IncidentWizard() {
 
           <div className="mt-4 flex flex-col gap-3 border-t border-slate-200 pt-4 md:flex-row md:items-center md:justify-between">
             <div className="flex items-center gap-2 w-full md:w-auto">
+              <span className={`inline-flex items-center rounded-full border px-2 py-1 text-[11px] font-semibold uppercase tracking-wide ${statusClasses(currentSource?.status)}`}>
+                {statusLabel(currentSource?.status)}
+              </span>
               <label htmlFor="review-filter" className="text-xs text-slate-500 font-semibold uppercase tracking-wide">
                 Show
               </label>
@@ -647,8 +702,12 @@ export default function IncidentWizard() {
               <div className="mt-8 flex items-center justify-between">
                 <button className="btn-secondary" onClick={() => setMode('view')}>Cancel</button>
                 <div className="flex gap-3">
-                  <button className="btn-primary bg-emerald-600 hover:bg-emerald-700" onClick={handleSave}>
-                    <CheckCircle2 className="w-4 h-4" /> Save and Return
+                  <button
+                    className="btn-primary bg-emerald-600 hover:bg-emerald-700"
+                    onClick={handleSave}
+                    disabled={isSavingEdits || isFinalizingFile || isDeletingFile}
+                  >
+                    <CheckCircle2 className="w-4 h-4" /> {isSavingEdits ? 'Saving...' : 'Save and Return'}
                   </button>
                 </div>
               </div>

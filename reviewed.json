@@ -71051,6 +71051,528 @@
           }
         ]
       }
+    },
+    {
+      "incidentId": "INC-19032-2025-12-05",
+      "updatedAt": "2026-03-28T22:20:30.279Z",
+      "data": {
+        "count": 1,
+        "incident_ids": [
+          "INC-19032-2025-12-05"
+        ],
+        "incidents": [
+          {
+            "incident_id": "INC-19032-2025-12-05",
+            "title": "France will export prisoners to Moldova",
+            "summary": "Pro-Kremlin outlets distorted a TV interview by Emmanuel Macron to falsely claim that France is planning to 'export' prisoners to Moldova. This disinformation leverages the 'Moldova as an EU colony' narrative to undermine Moldovan sovereignty and EU-Moldova relations.",
+            "tags": [
+              "Imperialism/colonialism"
+            ],
+            "artifacts": [
+              {
+                "name": "evedomosti.md",
+                "search_url": "/?s=*&type=database&&outlet=evedomosti.md",
+                "archive_url": "https://archive.euvsd.info/snapshots/CKS3P2jUVRhKe0CC7SAxan"
+              }
+            ],
+            "location": {
+              "origin_countries": [
+                "RUS"
+              ],
+              "victim_countries": [
+                "MDA",
+                "FRA"
+              ],
+              "target_audience_countries": [
+                "MDA"
+              ]
+            },
+            "knowledge_graph": {
+              "objects": [
+                {
+                  "obj_type": "Incident",
+                  "meta": {
+                    "id_data": "INC-19032-2025-12-05",
+                    "extraction_method": "explicit",
+                    "reasoning": "Core incident defined in the input data."
+                  },
+                  "properties": {
+                    "Name": {
+                      "value": "The Moldovan Penal Colony Hoax",
+                      "method": "generated",
+                      "reasoning": "Descriptive title for the disinformation event."
+                    },
+                    "Description": {
+                      "value": "A disinformation incident where French President Macron's comments on prison overcrowding were reframed to suggest Moldova would become a dumping ground for French foreign prisoners.",
+                      "method": "explicit",
+                      "reasoning": "Synthesized from summary and response."
+                    },
+                    "First_Seen": {
+                      "value": "2025-05-18T00:00:00Z",
+                      "method": "explicit",
+                      "reasoning": "Publication date provided in the incident data."
+                    },
+                    "Last_Seen": {
+                      "value": "2025-05-18T23:59:59Z",
+                      "method": "inferred",
+                      "reasoning": "Based on the single publication date provided."
+                    },
+                    "Objective": {
+                      "value": "To frame the EU/France as imperialist actors and Moldova as a submissive colony to stir anti-EU sentiment.",
+                      "method": "inferred",
+                      "reasoning": "Strategic intent derived from the 'Imperialism/colonialism' tag."
+                    }
+                  }
+                },
+                {
+                  "obj_type": "Threat Actor",
+                  "meta": {
+                    "id_data": "origin_thr_0007",
+                    "extraction_method": "inferred",
+                    "reasoning": "Explicitly identified as a 'pro-Kremlin disinformation narrative' in the response."
+                  },
+                  "properties": {
+                    "Name": {
+                      "value": "Russia",
+                      "method": "explicit",
+                      "reasoning": "Database match for Kremlin-affiliated influence operations."
+                    },
+                    "Description": {
+                      "value": "State-sponsored or state-aligned actors promoting narratives to destabilize EU-Moldova relations.",
+                      "method": "inferred",
+                      "reasoning": "Context of pro-Kremlin narratives in Moldova."
+                    },
+                    "Threat_Actor_Type": {
+                      "value": "nation-state",
+                      "method": "explicit",
+                      "reasoning": "Ontology classification for state-level actors."
+                    },
+                    "Roles": {
+                      "value": "trigger",
+                      "method": "inferred",
+                      "reasoning": "The actor initiated the distortion of the TV interview."
+                    },
+                    "Goals": {
+                      "value": "Destabilize Moldova's European path and promote the 'lost sovereignty' narrative.",
+                      "method": "inferred",
+                      "reasoning": "Aligned with the provided similar cases."
+                    },
+                    "Sophistication": {
+                      "value": "advanced",
+                      "method": "inferred",
+                      "reasoning": "Ability to monitor foreign media (French TV) and quickly reframe it for a specific target audience (Moldova)."
+                    },
+                    "Resource_Level": {
+                      "value": "government",
+                      "method": "inferred",
+                      "reasoning": "Part of a broader state-level information campaign."
+                    },
+                    "Primary_Motivations": {
+                      "value": "ideology",
+                      "method": "inferred",
+                      "reasoning": "Anti-Western/Anti-EU geopolitical alignment."
+                    }
+                  }
+                },
+                {
+                  "obj_type": "Attack Pattern",
+                  "meta": {
+                    "id_data": "T0023.001",
+                    "extraction_method": "explicit",
+                    "reasoning": "The incident relies on taking Macron's general words and applying them falsely to a specific context (Moldova)."
+                  },
+                  "properties": {
+                    "Name": {
+                      "value": "T0023.001 - Reframe Context",
+                      "method": "explicit",
+                      "reasoning": "Macron's interview about French prisons was reframed to target Moldova."
+                    },
+                    "Description": {
+                      "value": "Taking authentic statements and removing the original context to create a false narrative.",
+                      "method": "inferred",
+                      "reasoning": "Standard DISARM definition applied to this case."
+                    },
+                    "External_Reference": {
+                      "value": "T0023.001",
+                      "method": "explicit",
+                      "reasoning": "DISARM ID."
+                    },
+                    "Kill_Chain_Phase": {
+                      "value": "Develop Content",
+                      "method": "explicit",
+                      "reasoning": "Tactic phase for distorting facts."
+                    }
+                  }
+                },
+                {
+                  "obj_type": "Attack Pattern",
+                  "meta": {
+                    "id_data": "T0003",
+                    "extraction_method": "explicit",
+                    "reasoning": "The response notes this is a 'recurring' narrative about Moldova as a colony."
+                  },
+                  "properties": {
+                    "Name": {
+                      "value": "T0003 - Leverage Existing Narratives",
+                      "method": "explicit",
+                      "reasoning": "Uses the pre-existing 'Moldova is a colony' storyline."
+                    },
+                    "Description": {
+                      "value": "Adapting baseline stories already known to the target audience.",
+                      "method": "inferred",
+                      "reasoning": "Standard DISARM definition."
+                    },
+                    "External_Reference": {
+                      "value": "T0003",
+                      "method": "explicit",
+                      "reasoning": "DISARM ID."
+                    },
+                    "Kill_Chain_Phase": {
+                      "value": "Develop Narratives",
+                      "method": "explicit",
+                      "reasoning": "Tactic phase for narrative building."
+                    }
+                  }
+                },
+                {
+                  "obj_type": "Narrative",
+                  "meta": {
+                    "id_data": "INC-19032-2025-12-05_NAR_01",
+                    "extraction_method": "generated",
+                    "reasoning": "Derived strictly from the title 'France will export prisoners to Moldova'."
+                  },
+                  "properties": {
+                    "Name": {
+                      "value": "France Treats Moldova as a Penal Dumping Ground",
+                      "method": "generated",
+                      "reasoning": "5Ws summary of the narrative axis."
+                    },
+                    "Description": {
+                      "value": "A narrative claiming that France intends to violate Moldovan sovereignty by using it as a repository for its excess criminal population.",
+                      "method": "generated",
+                      "reasoning": "Contextual summary."
+                    },
+                    "Hierarchy_Rank": {
+                      "value": "Primary",
+                      "method": "inferred",
+                      "reasoning": "The main claim presented in the incident."
+                    },
+                    "Greimas_Structure": {
+                      "value": "The France generates an Exportation of Prisoners changing the relationship of the Moldova with the National Sovereignty from UNION to DISJUNCTION.",
+                      "method": "generated",
+                      "reasoning": "Canonical Greimasian structure based on the title."
+                    },
+                    "Active_Subject": {
+                      "value": "France",
+                      "method": "explicit",
+                      "reasoning": "Identified as the actor performing the 'export' in the title/summary."
+                    },
+                    "Active_Subject_Sentiment": {
+                      "value": "Negative",
+                      "method": "inferred",
+                      "reasoning": "Portrayed as an imperialist/aggressor."
+                    },
+                    "Passive_Subject": {
+                      "value": "Moldova",
+                      "method": "explicit",
+                      "reasoning": "Identified as the recipient/victim in the title/summary."
+                    },
+                    "Passive_Subject_Sentiment": {
+                      "value": "Positive",
+                      "method": "inferred",
+                      "reasoning": "Portrayed as the victim whose sovereignty is threatened."
+                    },
+                    "Object_of_Value": {
+                      "value": "National Sovereignty / Dignity",
+                      "method": "inferred",
+                      "reasoning": "The value at stake according to the 'colonial' framing."
+                    },
+                    "Action": {
+                      "value": "Export prisoners",
+                      "method": "explicit",
+                      "reasoning": "The verb from the title."
+                    },
+                    "Goal": {
+                      "value": "To incite fear of European integration and portray the EU as exploitative.",
+                      "method": "inferred",
+                      "reasoning": "Strategic goal of the narrative."
+                    },
+                    "Emotion": {
+                      "value": "fear",
+                      "method": "inferred",
+                      "reasoning": "Plutchik: Reaction to dangerous foreign prisoners/imperialism."
+                    },
+                    "Targeted_Public": {
+                      "value": "Moldovan Citizens",
+                      "method": "inferred",
+                      "reasoning": "Primary audience for the outlet and local topic."
+                    }
+                  }
+                },
+                {
+                  "obj_type": "Channel",
+                  "meta": {
+                    "id_data": "INC-19032-2025-12-05_CHN_01",
+                    "extraction_method": "explicit",
+                    "reasoning": "Extracted from outlets_combined."
+                  },
+                  "properties": {
+                    "Name": {
+                      "value": "evedomosti.md",
+                      "method": "explicit",
+                      "reasoning": "Domain name of the outlet."
+                    },
+                    "Description": {
+                      "value": "A Moldovan digital outlet publishing in Russian, frequently carrying pro-Kremlin messaging.",
+                      "method": "inferred",
+                      "reasoning": "Contextual role in the dissemination of this narrative."
+                    },
+                    "Platform": {
+                      "value": "website",
+                      "method": "explicit",
+                      "reasoning": "Ontology classification."
+                    },
+                    "Channel_Type": {
+                      "value": "state-aligned-channel",
+                      "method": "inferred",
+                      "reasoning": "Outlet used for Russian-aligned influence ops in Moldova."
+                    },
+                    "Reach": {
+                      "value": "medium",
+                      "method": "inferred",
+                      "reasoning": "Regional outlet targeting the Russian-speaking minority in Moldova."
+                    },
+                    "Purpose": {
+                      "value": "Dissemination of Kremlin-aligned talking points in the Moldovan info-sphere.",
+                      "method": "inferred",
+                      "reasoning": "Observed behavior."
+                    }
+                  }
+                },
+                {
+                  "obj_type": "Organization",
+                  "meta": {
+                    "id_data": "INC-19032-2025-12-05_ORG_01",
+                    "extraction_method": "explicit",
+                    "reasoning": "The government of Moldova is the primary strategic victim."
+                  },
+                  "properties": {
+                    "Name": {
+                      "value": "Government of Moldova",
+                      "method": "explicit",
+                      "reasoning": "Entity targeted by the 'colony' narrative."
+                    },
+                    "Description": {
+                      "value": "The executive authority of Moldova, portrayed in the disinfo as a passive recipient of French directives.",
+                      "method": "inferred",
+                      "reasoning": "Role in the narrative axis."
+                    },
+                    "Type": {
+                      "value": "Government",
+                      "method": "explicit",
+                      "reasoning": "Ontology mapping."
+                    },
+                    "Role_Type": {
+                      "value": "target",
+                      "method": "inferred",
+                      "reasoning": "The institution being delegitimized."
+                    }
+                  }
+                },
+                {
+                  "obj_type": "Organization",
+                  "meta": {
+                    "id_data": "INC-19032-2025-12-05_ORG_02",
+                    "extraction_method": "explicit",
+                    "reasoning": "France is used as the 'aggressor' proxy in the narrative."
+                  },
+                  "properties": {
+                    "Name": {
+                      "value": "Government of France",
+                      "method": "explicit",
+                      "reasoning": "Entity performing the 'export'."
+                    },
+                    "Type": {
+                      "value": "Government",
+                      "method": "explicit",
+                      "reasoning": "Ontology mapping."
+                    },
+                    "Role_Type": {
+                      "value": "target",
+                      "method": "inferred",
+                      "reasoning": "Attacked to smear French international reputation in Moldova."
+                    }
+                  }
+                },
+                {
+                  "obj_type": "Persona",
+                  "meta": {
+                    "id_data": "INC-19032-2025-12-05_PER_01",
+                    "extraction_method": "explicit",
+                    "reasoning": "Figurehead whose words were distorted."
+                  },
+                  "properties": {
+                    "Name": {
+                      "value": "Emmanuel Macron",
+                      "method": "explicit",
+                      "reasoning": "Identified in summary and response."
+                    },
+                    "Description": {
+                      "value": "President of France, used as the active subject of the false penal export claim.",
+                      "method": "inferred",
+                      "reasoning": "Role in the narrative."
+                    },
+                    "Occupation": {
+                      "value": "Head of State",
+                      "method": "inferred",
+                      "reasoning": "Known role."
+                    },
+                    "Role_Type": {
+                      "value": "target",
+                      "method": "inferred",
+                      "reasoning": "Victim of quote distortion."
+                    },
+                    "Affiliation": {
+                      "value": "Government of France",
+                      "method": "explicit",
+                      "reasoning": "Institutional link."
+                    }
+                  }
+                },
+                {
+                  "obj_type": "Event",
+                  "meta": {
+                    "id_data": "INC-19032-2025-12-05_EVT_01",
+                    "extraction_method": "explicit",
+                    "reasoning": "The TV show appearance on May 13 mentioned in the response."
+                  },
+                  "properties": {
+                    "Name": {
+                      "value": "Macron TV Interview May 13",
+                      "method": "explicit",
+                      "reasoning": "The real-world occurrence used as the 'kernel of truth'."
+                    },
+                    "Description": {
+                      "value": "A television broadcast where Macron discussed French prison overcrowding and general solutions, including renting space abroad.",
+                      "method": "explicit",
+                      "reasoning": "Contextual description from the response."
+                    },
+                    "Date": {
+                      "value": "2025-05-13",
+                      "method": "explicit",
+                      "reasoning": "Date provided in the response."
+                    }
+                  }
+                },
+                {
+                  "obj_type": "Location",
+                  "meta": {
+                    "id_data": "INC-19032-2025-12-05_LOC_01",
+                    "extraction_method": "explicit",
+                    "reasoning": "The primary victim location."
+                  },
+                  "properties": {
+                    "Name": {
+                      "value": "Moldova",
+                      "method": "explicit",
+                      "reasoning": "Primary target country."
+                    },
+                    "Country": {
+                      "value": "MDA",
+                      "method": "explicit",
+                      "reasoning": "ISO Code."
+                    },
+                    "Region": {
+                      "value": "eastern-europe",
+                      "method": "explicit",
+                      "reasoning": "Ontology region."
+                    }
+                  }
+                }
+              ],
+              "relations": [
+                {
+                  "source_id": "INC-19032-2025-12-05",
+                  "relationship_type": "attributed-to",
+                  "target_id": "origin_thr_0007",
+                  "meta": {
+                    "reasoning": "Incident is identified as a pro-Kremlin operation."
+                  }
+                },
+                {
+                  "source_id": "INC-19032-2025-12-05",
+                  "relationship_type": "targets",
+                  "target_id": "INC-19032-2025-12-05_ORG_01",
+                  "meta": {
+                    "reasoning": "The narrative aims to undermine the Moldovan government's sovereignty."
+                  }
+                },
+                {
+                  "source_id": "INC-19032-2025-12-05",
+                  "relationship_type": "targets",
+                  "target_id": "INC-19032-2025-12-05_ORG_02",
+                  "meta": {
+                    "reasoning": "The narrative smears France as a colonial aggressor."
+                  }
+                },
+                {
+                  "source_id": "INC-19032-2025-12-05",
+                  "relationship_type": "uses Narrative",
+                  "target_id": "INC-19032-2025-12-05_NAR_01",
+                  "meta": {
+                    "reasoning": "The core of the incident is the penal export narrative."
+                  }
+                },
+                {
+                  "source_id": "INC-19032-2025-12-05_NAR_01",
+                  "relationship_type": "manifests-in",
+                  "target_id": "INC-19032-2025-12-05_EVT_01",
+                  "meta": {
+                    "reasoning": "The false narrative was built by distorting this specific event."
+                  }
+                },
+                {
+                  "source_id": "INC-19032-2025-12-05_CHN_01",
+                  "relationship_type": "operated-by",
+                  "target_id": "origin_thr_0007",
+                  "meta": {
+                    "reasoning": "The outlet is a vehicle for the threat actor's narratives."
+                  }
+                },
+                {
+                  "source_id": "INC-19032-2025-12-05_PER_01",
+                  "relationship_type": "participates Event",
+                  "target_id": "INC-19032-2025-12-05_EVT_01",
+                  "meta": {
+                    "reasoning": "Macron was the subject/speaker in the TV interview."
+                  }
+                },
+                {
+                  "source_id": "INC-19032-2025-12-05_NAR_01",
+                  "relationship_type": "located-at",
+                  "target_id": "INC-19032-2025-12-05_LOC_01",
+                  "meta": {
+                    "reasoning": "The narrative is locally anchored in Moldova."
+                  }
+                }
+              ]
+            },
+            "summary_euvsdisinfo": "France is seriously considering the possibility of sending foreign prisoners from its overcrowded prisons to penitentiaries in Eastern Europe. More than half of French citizens are in favor of renting prison space abroad, a study by CSA found. Earlier, President Emmanuel Macron supported the idea.",
+            "response": "Recurring pro-Kremlin disinformation narrative claiming that EU treats Moldova as acolony, where it can carry out dangerous activities, to the detriment of the host country. The statement is false. It refers to the statement of French President Emmanuel Macron made on May 13 in aTV show(min.2.06.09). When asked about the problem of overcrowding in prisons in France, he replied that he was in favour of a possible solution of renting prison space in other countries. Emmanuel Macron did not mention any specific geographical area or country from which France could rent prison space. See here similar cases:The EU is testing methods of European totalitarianism in Moldova,Moldova lost its sovereignty and is ruled by foreigners.",
+            "publication_date": "May 18, 2025",
+            "source_file": "2025-05-18_france-will-export-prisoners-to-moldova.html",
+            "languages": [
+              "Russian"
+            ],
+            "countries_regions": [
+              "Moldova",
+              "France",
+              "EU"
+            ],
+            "outlet_count": 0
+          }
+        ]
+      }
     }
   ]
 }
